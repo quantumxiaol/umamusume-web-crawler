@@ -13,7 +13,7 @@ from umamusume_web_crawler.web.crawler import crawl_page
 async def test_crawl_page_returns_content() -> None:
     target_url = os.getenv(
         "CRAWLER_TEST_URL",
-        "https://wiki.biligame.com/umamusume/爱慕织姬",
+        "https://example.com",
     )
 
     try:

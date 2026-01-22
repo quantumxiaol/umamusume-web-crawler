@@ -7,10 +7,8 @@ python tests/test_mcp_tool_crawler_moegirl.py -u "http://127.0.0.1:7777/mcp/" \
     --tool-arg "url=https://mzh.moegirl.org.cn/东海帝王"
 
 Notes:
-- crawl_moegirl_wiki captures PDF and converts to Markdown via MarkItDown.
+- crawl_moegirl_wiki uses the MediaWiki API and returns parsed Markdown.
 - Optional: --tool-arg "use_proxy=true"
-- Optional: --tool-arg "print_scale=0.65"
-- Optional: --tool-arg "headless=false"
 """
 
 import argparse

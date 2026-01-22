@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import sys
+from urllib.parse import parse_qs, quote, unquote, urlparse
 from collections.abc import AsyncIterator
 
 import uvicorn
@@ -15,15 +16,43 @@ from starlette.requests import Request
 from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
-from umamusume_web_crawler.web.crawler import (
-    crawl_biligame_page_visual_markitdown,
-    crawl_moegirl_page_visual_markitdown,
-    crawl_page,
-    crawl_page_visual_markitdown,
+from umamusume_web_crawler.web.biligame import (
+    fetch_biligame_wikitext_expanded,
+    search_biligame_titles,
 )
-from umamusume_web_crawler.web.search import google_search_urls
+from umamusume_web_crawler.web.moegirl import (
+    fetch_moegirl_wikitext_expanded,
+    search_moegirl_titles,
+)
+from umamusume_web_crawler.web.parse_wiki_infobox import (
+    parse_wiki_page,
+    wiki_page_to_llm_markdown,
+)
+from umamusume_web_crawler.web.search import (
+    google_search_page_urls,
+    google_search_urls,
+)
 
 mcp = FastMCP("Umamusume Web MCP")
+
+_BILIGAME_BASE_URL = "https://wiki.biligame.com/umamusume/"
+_MOEGIRL_BASE_URL = "https://mzh.moegirl.org.cn/"
+
+
+def _title_from_url(value: str) -> str:
+    if not value.startswith("http://") and not value.startswith("https://"):
+        return value
+    parsed = urlparse(value)
+    if parsed.path.endswith("/index.php"):
+        params = parse_qs(parsed.query)
+        title = params.get("title", [""])[0]
+        if title:
+            return title
+    return unquote(parsed.path.strip("/").split("/")[-1])
+
+
+def _build_wiki_url(base_url: str, title: str) -> str:
+    return f"{base_url}{quote(title)}"
 
 
 @mcp.tool(
@@ -52,75 +81,127 @@ async def web_search_google(query: str) -> dict:
 
 @mcp.tool(
     description="""
-Crawl a page from a URL and return the page content as markdown.
-Use this for general pages that do not require site-specific handling.
+Search Biligame Wiki for a character name and return candidate wiki links.
 """
 )
-async def crawl_web_page(url: str) -> dict:
-    try:
-        markdown = await crawl_page(url, use_proxy=False)
-        return {"status": "success", "result": str(markdown)}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
-
-
-@mcp.tool(
-    description="""
-Capture a webpage as PDF via browser rendering, convert the PDF to Markdown with MarkItDown,
-and return the Markdown string.
-Uses a proxy if use_proxy is true. If use_proxy is omitted, it follows proxy settings from .env.
-"""
-)
-async def crawl_web_page_visual_markitdown(
-    url: str, use_proxy: bool | None = None
+async def biligame_wiki_seaech(
+    keyword: str, limit: int = 5, use_proxy: bool | None = None
 ) -> dict:
     try:
-        markdown = await crawl_page_visual_markitdown(url, use_proxy=use_proxy)
-        return {"status": "success", "result": str(markdown)}
+        titles = await search_biligame_titles(
+            keyword, limit=limit, use_proxy=use_proxy
+        )
+        results = [
+            {
+                "title": title,
+                "url": _build_wiki_url(_BILIGAME_BASE_URL, title),
+                "priority": str(idx + 1),
+            }
+            for idx, title in enumerate(titles)
+        ]
+        return {"results": results}
     except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+        return {"results": [], "error": str(exc)}
 
 
 @mcp.tool(
     description="""
-Capture a Bilibili Wiki page as PDF via browser rendering, convert the PDF to Markdown
-with MarkItDown, and return the Markdown string.
-Use this for wiki.biligame.com/umamusume pages.
-If use_proxy is omitted, it follows proxy settings from .env.
+Search Moegirl Wiki for a character name and return candidate wiki links.
 """
 )
-async def crawl_biligame_wiki(url: str, use_proxy: bool | None = None) -> dict:
+async def moegirl_wiki_search(
+    keyword: str, limit: int = 5, use_proxy: bool | None = None
+) -> dict:
     try:
-        markdown = await crawl_biligame_page_visual_markitdown(url, use_proxy=use_proxy)
-        return {"status": "success", "result": str(markdown)}
+        titles = await search_moegirl_titles(
+            keyword, limit=limit, use_proxy=use_proxy
+        )
+        results = [
+            {
+                "title": title,
+                "url": _build_wiki_url(_MOEGIRL_BASE_URL, title),
+                "priority": str(idx + 1),
+            }
+            for idx, title in enumerate(titles)
+        ]
+        return {"results": results}
+    except Exception as exc:
+        return {"results": [], "error": str(exc)}
+
+
+@mcp.tool(
+    description="""
+Crawl a Bilibili Wiki page via API and return the parsed Markdown output.
+Use this for wiki.biligame.com/umamusume pages. Supports optional transclusion expansion.
+"""
+)
+async def crawl_biligame_wiki(
+    url: str,
+    max_depth: int = 1,
+    max_pages: int = 5,
+    use_proxy: bool | None = None,
+) -> dict:
+    try:
+        wikitext = await fetch_biligame_wikitext_expanded(
+            url,
+            max_depth=max_depth,
+            max_pages=max_pages,
+            use_proxy=use_proxy,
+        )
+        page = parse_wiki_page(wikitext, site="biligame")
+        heading = _title_from_url(url)
+        markdown = wiki_page_to_llm_markdown(heading, page, site="biligame")
+        return {"status": "success", "result": markdown}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
 
 @mcp.tool(
     description="""
-Capture a Moegirl Wiki page as PDF via browser rendering, convert the PDF to Markdown
-with MarkItDown, and return the Markdown string.
-Use this for mzh.moegirl.org.cn pages. If use_proxy is omitted, it follows proxy settings
-from .env. print_scale defaults to 0.65 when omitted.
+Crawl a Moegirl Wiki page via API and return the parsed Markdown output.
+Use this for mzh.moegirl.org.cn pages. Supports optional transclusion expansion.
 """
 )
 async def crawl_moegirl_wiki(
     url: str,
+    max_depth: int = 1,
+    max_pages: int = 5,
     use_proxy: bool | None = None,
-    print_scale: float | None = None,
-    headless: bool = False,
 ) -> dict:
     try:
-        markdown = await crawl_moegirl_page_visual_markitdown(
+        wikitext = await fetch_moegirl_wikitext_expanded(
             url,
+            max_depth=max_depth,
+            max_pages=max_pages,
             use_proxy=use_proxy,
-            print_scale=print_scale,
-            headless=headless,
         )
-        return {"status": "success", "result": str(markdown)}
+        page = parse_wiki_page(wikitext, site="moegirl")
+        heading = _title_from_url(url)
+        markdown = wiki_page_to_llm_markdown(heading, page, site="moegirl")
+        return {"status": "success", "result": markdown}
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
+
+
+@mcp.tool(
+    description="""
+Fetch Google search result page HTML and extract result links.
+Use this when Google API is unavailable and you need simple link extraction.
+"""
+)
+async def crawl_google_page(
+    query: str, num: int = 5, use_proxy: bool | None = None
+) -> dict:
+    try:
+        results = google_search_page_urls(query, num=num, use_proxy=use_proxy)
+        return {
+            "results": [
+                {"url": item["url"], "priority": str(item["priority"])}
+                for item in results
+            ]
+        }
+    except Exception as exc:
+        return {"results": [], "error": str(exc)}
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:

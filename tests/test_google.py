@@ -2,10 +2,16 @@ import os
 import sys
 
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv()
 
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
+from umamusume_web_crawler.config import config
 from umamusume_web_crawler.web.search import google_search_urls
+
+config.update_from_env()
 
 
 def test_google_search_urls() -> None:

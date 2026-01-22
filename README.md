@@ -2,6 +2,13 @@
 
 提供 Web MCP 搜索/抓取工具与本地 CLI，将网页内容整理为 Markdown。
 
+## 项目总结
+
+- 核心能力：站内搜索 + MediaWiki API 抓取 + 视觉抓取（Crawl4AI → PDF → MarkItDown）
+- 目标站点：Bilibili Wiki / 萌娘百科 + 通用网页
+- 运行形态：本地 CLI、Python 包调用、MCP 服务
+- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面
+
 ## 项目结构
 
 ```
@@ -17,6 +24,9 @@ umamusume-web-crawler/
 |   |   |-- web/
 |   |   |   |-- __init__.py              # Web 子模块入口
 |   |   |   |-- crawler.py               # Crawl4AI 抓取封装
+|   |   |   |-- biligame.py              # Bilibili Wiki API 访问
+|   |   |   |-- moegirl.py               # 萌娘百科 API 访问
+|   |   |   |-- parse_wiki_infobox.py    # Wiki 解析与 Markdown 渲染
 |   |   |   |-- process.py               # MarkItDown 转换封装
 |   |   |   |-- search.py                # Google 搜索封装
 |   |   |   |-- smart_split.py           # 分段工具
@@ -28,6 +38,7 @@ umamusume-web-crawler/
 |   |-- test_mcp_tool_crawler_moegirl.py # MCP 萌娘百科抓取测试
 |   |-- test_mcp_tool_google.py          # MCP 搜索工具测试
 |   |-- test_moegirl_crawler.py          # 萌娘百科抓取测试
+|   |-- test_search_title.py             # 站内搜索测试
 |   |-- test_visual_capture_pdf.py       # 视觉抓取 PDF/PNG
 |-- .env.example                         # 环境变量模板
 |-- main.py                              # CLI 入口
@@ -56,6 +67,7 @@ cat .env.example > .env
 - `GOOGLE_CSE_ID`
 - `HTTP_PROXY` / `HTTPS_PROXY`（可选，如访问 google、萌娘百科需要代理时再设置；未设置则直接访问）
 - `CRAWLER_TIMEOUT_S`（可选，单次爬取超时秒数，默认 300）
+- `CRAWLER_USER_DATA_DIR`（可选，持久化浏览器 profile 目录，用于绕过首次验证/WAF）
 
 说明：作为库使用时不会自动读取 `.env`。请在调用方应用中自行加载环境变量（例如使用 `python-dotenv`），
 或直接在系统环境中设置；`python main.py` / `python mcpserver.py` 会自动尝试加载当前目录下的 `.env`。
@@ -74,28 +86,70 @@ config.update_from_env()
 config.apply_overrides(crawler_timeout_s=180, http_proxy="http://127.0.0.1:7890")
 ```
 
-## 使用与参数传递
+## 使用与参数传递（API 优先）
 
-Python API（最灵活）：
+默认推荐走 MediaWiki API（更稳定、无需视觉渲染），用法可直接参考：
+- `tests/test_biligame_crawler.py`
+- `tests/test_moegirl_crawler.py`
 
+Python API（站内搜索 → 拉取 wikitext → 展开子页面 → 清洗成 Markdown）：
+
+```python
+from umamusume_web_crawler.web.moegirl import (
+    fetch_moegirl_wikitext_expanded,
+    search_moegirl_titles,
+)
+from umamusume_web_crawler.web.biligame import (
+    fetch_biligame_wikitext_expanded,
+    search_biligame_titles,
+)
+from umamusume_web_crawler.web.parse_wiki_infobox import (
+    parse_wiki_page,
+    wiki_page_to_llm_markdown,
+)
+
+# 萌娘百科：搜索标题 → 拉取 wikitext → 展开子页面 → Markdown
+titles = await search_moegirl_titles("东海帝王")
+target = titles[0] if titles else "东海帝王"
+wikitext = await fetch_moegirl_wikitext_expanded(
+    target, max_depth=1, max_pages=5
+)
+page = parse_wiki_page(wikitext, site="moegirl")
+md = wiki_page_to_llm_markdown(target, page, site="moegirl")
+
+# Bilibili Wiki：搜索标题 → 拉取 wikitext → 展开子页面 → Markdown
+titles = await search_biligame_titles("东海帝皇")
+target = titles[0] if titles else "东海帝皇"
+wikitext = await fetch_biligame_wikitext_expanded(
+    target, max_depth=1, max_pages=5
+)
+page = parse_wiki_page(wikitext, site="biligame")
+md = wiki_page_to_llm_markdown(target, page, site="biligame")
+```
+
+说明：
+- `workspace` / `output_dir` 是函数参数，不会自动从环境变量读取；如需用环境变量控制，请在调用方读取后传入。
+- `timeout_s` 可单次覆盖；默认值来自 `CRAWLER_TIMEOUT_S`。
+- `use_proxy` 为 `None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY` 配置。
+- `CRAWLER_USER_DATA_DIR` 会启用持久化浏览器 profile（复用 Cookie/会话）。
+- MediaWiki API 模块也支持 `use_proxy` 参数；萌娘百科直连即可访问时可不启用代理。
+
+如需走“视觉抓取”（Crawl4AI → PDF → MarkItDown），参考旧方案：
 ```python
 from pathlib import Path
 from umamusume_web_crawler.web.crawler import (
     crawl_biligame_page_visual_markitdown,
     crawl_biligame_page_visual,
-    crawl_moegirl_page_visual_markitdown,
 )
 
-# 视觉抓取 + MarkItDown
 content = await crawl_biligame_page_visual_markitdown(
     "https://wiki.biligame.com/umamusume/东海帝皇",
-    use_proxy=False,          # 可选，默认跟随环境变量代理
-    workspace="data/cache",   # 可选，持久化中间 PDF/PNG
-    keep_files=True,          # 可选，保留中间文件
-    timeout_s=180,            # 可选，覆盖 CRAWLER_TIMEOUT_S
+    use_proxy=False,
+    workspace="data/cache",
+    keep_files=True,
+    timeout_s=180,
 )
 
-# 只抓取 PDF/PNG（必须显式指定 output_dir）
 capture = await crawl_biligame_page_visual(
     "https://wiki.biligame.com/umamusume/东海帝皇",
     output_dir=Path("data/capture"),
@@ -105,11 +159,6 @@ capture = await crawl_biligame_page_visual(
     headless=False,
 )
 ```
-
-说明：
-- `workspace` / `output_dir` 是函数参数，不会自动从环境变量读取；如需用环境变量控制，请在调用方读取后传入。
-- `timeout_s` 可单次覆盖；默认值来自 `CRAWLER_TIMEOUT_S`。
-- `use_proxy` 为 `None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY` 配置。
 
 CLI 参数：
 - `--mode`（auto/biligame/moegirl/generic）
@@ -128,24 +177,52 @@ MCP 工具参数（示例）：
   "tool": "crawl_moegirl_wiki",
   "args": {
     "url": "https://mzh.moegirl.org.cn/东海帝王",
-    "use_proxy": true,
-    "print_scale": 0.65,
-    "headless": false
+    "max_depth": 1,
+    "max_pages": 5,
+    "use_proxy": true
   }
 }
 ```
 
+```json
+{
+  "tool": "crawl_biligame_wiki",
+  "args": {
+    "url": "https://wiki.biligame.com/umamusume/东海帝皇",
+    "max_depth": 1,
+    "max_pages": 5,
+    "use_proxy": false
+  }
+}
+```
+
+与测试脚本一致的 MCP 调用方式（可直接运行）：
+- `python tests/test_mcp_tool_crawler_biligame.py -u http://127.0.0.1:7777/mcp/`
+- `python tests/test_mcp_tool_crawler_moegirl.py -u http://127.0.0.1:7777/mcp/`
+## 运行结果
+
+```
+tests/test_biligame_crawler.py Search results for '东海帝皇': ['东海帝皇', '东海帝皇/ボクの武器', '东海帝皇/ボクのやり方', '东海帝皇/伝説のひと幕', '东海帝皇/ゴシップ狂想曲']
+Wrote 9994 chars to results/test/biligame_api.md
+TEST_RESULT: PASSED
+tests/test_moegirl_crawler.py Search results for '东海帝王': ['东海帝王']
+Wrote 58140 chars to results/test/moegirl_api.md
+TEST_RESULT: PASSED
+```
+
+使用API可以返回。
+
 ## 爬虫流程（现行）
 
-当前默认走“网页渲染 -> PDF -> MarkItDown”的视觉抓取流程，效果比纯 HTML 清洗更稳定：
+当前 MCP 默认走 MediaWiki API 抓取，再做结构化清洗输出 Markdown：
 
-1) Crawl4AI 以浏览器方式渲染页面，输出 PDF/PNG（可走代理）。
-2) 使用 MarkItDown 将 PDF 转成 Markdown 文本。
-3) MCP 工具 `crawl_biligame_wiki` / `crawl_moegirl_wiki` 返回这份 Markdown 作为抓取结果。
+1) 调用 Wiki API 拉取 wikitext。
+2) 解析 infobox/sections/transclusion 并转成 Markdown（可选 LLM 友好渲染）。
+3) MCP 工具 `crawl_biligame_wiki` / `crawl_moegirl_wiki` 返回 Markdown。
 
 说明：
-- 萌娘百科默认 `print_scale=0.65`，用于避免 PDF 被裁切。
-- 萌娘百科对 headless 更敏感，默认走 headful；CI 可用 `xvfb-run` 或显式 `headless=true`。
+- 视觉抓取方案仍保留，可通过 CLI `--visual` 或 Python API 调用。
+- Bwiki/萌娘百科可通过 `fetch_*_wikitext_expanded` 展开子页面，提升内容完整度。
 
 ## 探索经过（简述）
 
@@ -169,6 +246,56 @@ python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --
 ```
 
 输出会写入 `results/crawl.md`（或使用 `--output` 指定）。
+
+## 在其他项目中使用 MCP 服务（API 优先）
+
+1) 安装依赖（在你的项目中）
+
+```bash
+pip install umamusume-web-crawler
+```
+
+2) 配置环境变量（由你的应用负责加载）
+
+- `GOOGLE_API_KEY` / `GOOGLE_CSE_ID`：使用 `web_search_google` 时必需
+- `HTTP_PROXY` / `HTTPS_PROXY`：访问 Google/萌娘百科需要代理时设置
+- `CRAWLER_TIMEOUT_S`：单次爬取超时秒数（默认 300）
+
+3) 启动 MCP 服务（以模块方式运行）
+
+```bash
+python -m umamusume_web_crawler.mcp.server --http -p 7777
+```
+
+4) 在你的应用里调用 MCP 工具（示例）
+
+```json
+{
+  "tool": "crawl_moegirl_wiki",
+  "args": {
+    "url": "https://mzh.moegirl.org.cn/东海帝王",
+    "max_depth": 1,
+    "max_pages": 5,
+    "use_proxy": true
+  }
+}
+```
+
+可直接参考 MCP 调用测试：
+- `tests/test_mcp_tool_crawler_biligame.py`
+- `tests/test_mcp_tool_crawler_moegirl.py`
+
+可用工具与参数：
+- `web_search_google(query)`
+- `crawl_google_page(query, num?, use_proxy?)`
+- `biligame_wiki_seaech(keyword, limit?, use_proxy?)`
+- `moegirl_wiki_search(keyword, limit?, use_proxy?)`
+- `crawl_biligame_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `crawl_moegirl_wiki(url, max_depth?, max_pages?, use_proxy?)`
+
+说明：
+- MCP 工具默认使用 API 抓取，不生成中间 PDF/PNG。
+- `use_proxy=None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY`。
 
 ## 中间文件（PDF/PNG）存储
 
@@ -222,7 +349,9 @@ python tests/test_google.py
 python tests/test_crawler.py
 python tests/test_biligame_crawler.py
 python tests/test_moegirl_crawler.py
+python tests/test_search_title.py
 python tests/test_mcp_tool_crawler.py -u http://127.0.0.1:7777/mcp/
+python tests/test_mcp_tool_crawler_biligame.py -u http://127.0.0.1:7777/mcp/
 python tests/test_mcp_tool_crawler_moegirl.py -u http://127.0.0.1:7777/mcp/
 python tests/test_mcp_tool_google.py -u http://127.0.0.1:7777/mcp/
 ```

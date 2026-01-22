@@ -2,14 +2,15 @@
 check mcp server and list tools
 
 Local MCP example:
-python tests/test_mcp_tool_crawler.py -u "http://127.0.0.1:7777/mcp/" \
-    --tool-name crawl_google_page \
-    --tool-arg "query=爱慕织姬 site:wiki.biligame.com/umamusume"
+python tests/test_mcp_tool_crawler_biligame.py -u "http://127.0.0.1:7777/mcp/" \
+    --tool-name crawl_biligame_wiki \
+    --tool-arg "url=https://wiki.biligame.com/umamusume/爱慕织姬"
 
 Notes:
-- crawl_google_page fetches Google SERP HTML and extracts links.
-- Optional: --tool-arg "num=5"
+- crawl_biligame_wiki uses the MediaWiki API and returns parsed Markdown.
 - Optional: --tool-arg "use_proxy=true"
+- Optional: --tool-arg "max_depth=1"
+- Optional: --tool-arg "max_pages=5"
 """
 
 import argparse
@@ -122,12 +123,12 @@ async def async_main(
 @pytest.mark.asyncio
 async def test_mcp_tool_call() -> None:
     server_url = os.getenv("MCP_URL", "http://127.0.0.1:7777/mcp/")
-    tool_name = os.getenv("MCP_TOOL_NAME", "crawl_google_page")
+    tool_name = os.getenv("MCP_TOOL_NAME", "crawl_biligame_wiki")
     tool_args = parse_tool_args(
         [
             os.getenv(
                 "MCP_TOOL_QUERY",
-                "query=爱慕织姬 site:wiki.biligame.com/umamusume",
+                "url=https://wiki.biligame.com/umamusume/爱慕织姬",
             )
         ]
     )
@@ -143,13 +144,19 @@ async def test_mcp_tool_call() -> None:
                 result = await tool_dict[tool_name].ainvoke(tool_args)
                 assert result, "Empty tool result"
                 if isinstance(result, dict):
-                    error = result.get("error")
-                    assert not error, f"Tool error: {error}"
-                    items = result.get("results", [])
-                    assert items, "Expected non-empty search results"
-                    print(f"Result count: {len(items)}")
-                    for item in items[:3]:
-                        print(f"- {item.get('url')} (priority={item.get('priority')})")
+                    status = result.get("status")
+                    assert status == "success", f"Tool error: {result}"
+                    content = result.get("result") or result.get("message") or ""
+                    snippet = (
+                        content.replace("\n", " ")[:200]
+                        if isinstance(content, str)
+                        else ""
+                    )
+                    print(f"Result status: {status}")
+                    if snippet:
+                        print(f"Result snippet: {snippet}")
+                    else:
+                        print(f"Result keys: {list(result.keys())}")
                 else:
                     print(f"Result type: {type(result).__name__}")
                 print("TEST_RESULT: PASSED")
@@ -173,13 +180,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--tool-name",
         type=str,
-        default="crawl_google_page",
-        help="要直接调用的工具名称，例如 crawl_google_page",
+        default="crawl_biligame_wiki",
+        help="要直接调用的工具名称，例如 crawl_biligame_wiki",
     )
     parser.add_argument(
         "--tool-arg",
         action="append",
-        default=["query=爱慕织姬 site:wiki.biligame.com/umamusume"],
+        default=["url=https://wiki.biligame.com/umamusume/爱慕织姬"],
         help="工具参数，格式 key=value，可多次使用",
     )
     args = parser.parse_args()

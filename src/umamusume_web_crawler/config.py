@@ -23,6 +23,7 @@ class Config:
     crawler_pruned_threshold: float = 0.3
     crawler_pruned_min_words: int = 5
     crawler_timeout_s: float = 300.0
+    crawler_user_data_dir: str | None = None
 
     @classmethod
     def from_env(cls, environ: dict[str, str] | None = None) -> "Config":
@@ -45,6 +46,9 @@ class Config:
             if timeout_raw in (None, "")
             else float(timeout_raw)
         )
+        user_data_dir = env.get("CRAWLER_USER_DATA_DIR")
+        if user_data_dir == "":
+            user_data_dir = None
         return cls(
             user_agent=env.get("USER_AGENT", cls.user_agent),
             http_proxy=env.get("HTTP_PROXY"),
@@ -54,6 +58,7 @@ class Config:
             crawler_pruned_threshold=threshold,
             crawler_pruned_min_words=min_words,
             crawler_timeout_s=timeout,
+            crawler_user_data_dir=user_data_dir,
         )
 
     def update_from_env(self, environ: dict[str, str] | None = None) -> None:

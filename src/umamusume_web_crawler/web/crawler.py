@@ -84,6 +84,10 @@ _REAL_USER_AGENT = (
     "Chrome/123.0.0.0 Safari/537.36"
 )
 
+_STEALTH_JS = (
+    "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
+)
+
 _BILIGAME_JSON_MARKERS = (
     '"relation_type"',
     '"member_id"',
@@ -132,6 +136,15 @@ def _resolve_timeout(timeout_s: float | None) -> float | None:
 
 async def _run_with_timeout(coro, timeout_s: float | None) -> object:
     return await _await_with_timeout(coro, _resolve_timeout(timeout_s))
+
+
+def _resolve_user_data_dir() -> str | None:
+    user_data_dir = config.crawler_user_data_dir
+    if not user_data_dir:
+        return None
+    path = Path(user_data_dir).expanduser()
+    path.mkdir(parents=True, exist_ok=True)
+    return str(path)
 
 
 def _strip_json_blocks(text: str, markers: tuple[str, ...]) -> str:
@@ -320,6 +333,18 @@ def _looks_like_empty_html(html: str) -> bool:
     if "<body" not in normalized and "<div" not in normalized:
         return True
     return False
+
+
+def _looks_like_gateway_timeout(html: str) -> bool:
+    if not html:
+        return False
+    lowered = html.lower()
+    return (
+        "gateway time-out" in lowered
+        or "gateway timeout" in lowered
+        or "504 gateway" in lowered
+        or ">504<" in lowered
+    )
 
 
 def _extract_text_value(value: object) -> str:
@@ -658,6 +683,9 @@ def _build_run_config(
     css_selector: str | None = None,
     anti_bot: bool = False,
     wait_for_selector: str | None = None,
+    wait_until: str | None = None,
+    session_id: str | None = None,
+    page_timeout_ms: int | None = None,
     markdown_generator: DefaultMarkdownGenerator | None = None,
     extraction_strategy: object | None = None,
 ) -> CrawlerRunConfig:
@@ -667,17 +695,19 @@ def _build_run_config(
         if proxy_url and use_proxy
         else None
     )
-    return CrawlerRunConfig(
+    run_config = CrawlerRunConfig(
         markdown_generator=markdown_generator or _md_generator,
         extraction_strategy=extraction_strategy,
         proxy_rotation_strategy=proxy,
         excluded_selector=".ads, .comments, #sidebar, #mw-navigation, #footer",
         css_selector=css_selector,
         word_count_threshold=5,
-        wait_until="networkidle" if anti_bot else "domcontentloaded",
+        wait_until=wait_until or ("commit" if anti_bot else "domcontentloaded"),
         wait_for=wait_for_selector or css_selector or "body",
         wait_for_timeout=60000 if anti_bot else None,
-        page_timeout=120000 if anti_bot else None,
+        page_timeout=page_timeout_ms
+        if page_timeout_ms is not None
+        else (60000 if anti_bot else None),
         delay_before_return_html=3.0 if anti_bot else 2.0,
         remove_overlay_elements=True,
         magic=True,
@@ -686,6 +716,13 @@ def _build_run_config(
         simulate_user=anti_bot,
         override_navigator=anti_bot,
     )
+    if session_id:
+        _apply_optional_config(run_config, {"session_id": session_id})
+    if anti_bot:
+        _apply_optional_config(run_config, {"cache_mode": "BYPASS"})
+        if getattr(run_config, "js_code", None) is None:
+            _apply_optional_config(run_config, {"js_code": _STEALTH_JS})
+    return run_config
 
 
 def _build_capture_run_config(
@@ -694,6 +731,9 @@ def _build_capture_run_config(
     css_selector: str | None,
     anti_bot: bool,
     wait_for_selector: str | None,
+    wait_until: str | None,
+    session_id: str | None,
+    page_timeout_ms: int | None,
     png_path: Path,
     pdf_path: Path | None,
     capture_screenshot: bool,
@@ -708,6 +748,9 @@ def _build_capture_run_config(
         css_selector=css_selector,
         anti_bot=anti_bot,
         wait_for_selector=wait_for_selector,
+        wait_until=wait_until,
+        session_id=session_id,
+        page_timeout_ms=page_timeout_ms,
         markdown_generator=None,
         extraction_strategy=None,
     )
@@ -721,7 +764,16 @@ def _build_capture_run_config(
     if wait_for_images is not None:
         run_config.wait_for_images = wait_for_images
     if print_scale is not None and print_scale > 0:
-        run_config.js_code = _build_print_scale_js(print_scale)
+        scale_js = _build_print_scale_js(print_scale)
+        existing_js = getattr(run_config, "js_code", None)
+        if existing_js:
+            if isinstance(existing_js, list):
+                existing_js.append(scale_js)
+                run_config.js_code = existing_js
+            else:
+                run_config.js_code = [existing_js, scale_js]
+        else:
+            run_config.js_code = scale_js
     if capture_screenshot:
         _apply_optional_config(
             run_config,
@@ -774,12 +826,15 @@ async def _crawl_with_config(
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://www.google.com/",
     }
+    user_data_dir = _resolve_user_data_dir()
     browser_cfg = BrowserConfig(
         headless=headless,
         user_agent=_REAL_USER_AGENT,
         viewport_width=1920,
         viewport_height=1080,
         headers=headers,
+        use_managed_browser=bool(user_data_dir),
+        user_data_dir=user_data_dir,
         extra_args=[
             "--disable-blink-features=AutomationControlled",
             "--no-sandbox",
@@ -824,6 +879,7 @@ async def _crawl_with_config(
                             css_selector=None,
                             anti_bot=anti_bot,
                             wait_for_selector="body",
+                            wait_until=None,
                             markdown_generator=markdown_generator,
                             extraction_strategy=extraction_strategy,
                         ),
@@ -862,6 +918,7 @@ async def _crawl_with_config(
                                 css_selector=css_selector,
                                 anti_bot=anti_bot,
                                 wait_for_selector=wait_for_selector,
+                                wait_until=None,
                                 markdown_generator=markdown_generator,
                                 extraction_strategy=extraction_strategy,
                             ),
@@ -905,6 +962,11 @@ async def _crawl_page_visual(
     screenshot_wait_for: float | None,
     delay_before_return_html: float | None,
     wait_for_images: bool | None,
+    preload_url: str | None = None,
+    preload_delay_s: float | None = None,
+    wait_until: str | None = None,
+    page_timeout_ms: int | None = None,
+    session_id: str | None = None,
     headless: bool = True,
     pdf_from_png: bool = False,
     print_scale: float | None = None,
@@ -923,12 +985,15 @@ async def _crawl_page_visual(
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://www.google.com/",
     }
+    user_data_dir = _resolve_user_data_dir()
     browser_cfg = BrowserConfig(
         headless=headless,
         user_agent=_REAL_USER_AGENT,
         viewport_width=1920,
         viewport_height=1080,
         headers=headers,
+        use_managed_browser=bool(user_data_dir),
+        user_data_dir=user_data_dir,
         extra_args=[
             "--disable-blink-features=AutomationControlled",
             "--no-sandbox",
@@ -937,6 +1002,33 @@ async def _crawl_page_visual(
         enable_stealth=anti_bot,
     )
     async with AsyncWebCrawler(config=browser_cfg, verbose=True) as crawler:
+        if preload_url:
+            try:
+                preload_timeout = timeout_s if timeout_s and timeout_s > 0 else None
+                if preload_timeout:
+                    preload_timeout = min(preload_timeout, 60.0 if anti_bot else 20.0)
+                await _await_with_timeout(
+                    crawler.arun(
+                        url=preload_url,
+                        config=_build_run_config(
+                            use_proxy,
+                            css_selector=None,
+                            anti_bot=False,
+                            wait_for_selector="body",
+                            wait_until="commit",
+                            session_id=session_id,
+                            page_timeout_ms=page_timeout_ms,
+                            markdown_generator=None,
+                            extraction_strategy=None,
+                        ),
+                    ),
+                    preload_timeout,
+                )
+                if preload_delay_s:
+                    await asyncio.sleep(preload_delay_s)
+            except Exception as exc:
+                print(f"Warning: preload url failed: {exc}")
+
         async def run_capture(
             selector: str | None,
             wait_for: str | None,
@@ -945,26 +1037,55 @@ async def _crawl_page_visual(
             capture_pdf: bool,
             print_scale_override: float | None,
         ) -> tuple[Path | None, Path | None]:
-            result = await _await_with_timeout(
-                crawler.arun(
-                    url=crawl_url,
-                    config=_build_capture_run_config(
-                        use_proxy,
-                        css_selector=selector,
-                        anti_bot=anti_bot,
-                        wait_for_selector=wait_for,
-                        png_path=png_path,
-                        pdf_path=pdf_path,
-                        capture_screenshot=capture_screenshot,
-                        capture_pdf=capture_pdf,
-                        screenshot_wait_for=screenshot_wait_for,
-                        delay_before_return_html=delay_before_return_html,
-                        wait_for_images=wait_for_images,
-                        print_scale=print_scale_override,
-                    ),
-                ),
-                timeout_s,
-            )
+            max_retries = 2 if anti_bot else 1
+            result = None
+            last_error: Exception | None = None
+            for attempt in range(max_retries):
+                try:
+                    if max_retries > 1:
+                        print(f"Attempt {attempt + 1}/{max_retries} to load page.")
+                    attempt_timeout = timeout_s
+                    if timeout_s and timeout_s > 0:
+                        if anti_bot:
+                            attempt_timeout = 60.0 if attempt == 0 else min(timeout_s, 30.0)
+                        else:
+                            attempt_timeout = min(timeout_s, 25.0)
+                    result = await _await_with_timeout(
+                        crawler.arun(
+                            url=crawl_url,
+                            config=_build_capture_run_config(
+                                use_proxy,
+                                css_selector=selector,
+                                anti_bot=anti_bot,
+                                wait_for_selector=wait_for,
+                                wait_until=wait_until,
+                                session_id=session_id,
+                                page_timeout_ms=page_timeout_ms,
+                                png_path=png_path,
+                                pdf_path=pdf_path,
+                                capture_screenshot=capture_screenshot,
+                                capture_pdf=capture_pdf,
+                                screenshot_wait_for=screenshot_wait_for,
+                                delay_before_return_html=delay_before_return_html,
+                                wait_for_images=wait_for_images,
+                                print_scale=print_scale_override,
+                            ),
+                        ),
+                        attempt_timeout,
+                    )
+                    html_snapshot = _get_result_html(result)
+                    if html_snapshot and _looks_like_gateway_timeout(html_snapshot):
+                        raise RuntimeError("Gateway timeout detected; retrying.")
+                    break
+                except Exception as exc:
+                    last_error = exc
+                    if attempt < max_retries - 1:
+                        print(f"Attempt {attempt + 1} failed: {exc}. Retrying...")
+                        await asyncio.sleep(2.0)
+                        continue
+                    raise
+            if result is None and last_error is not None:
+                raise last_error
             png_saved = None
             if capture_screenshot:
                 png_saved = _save_capture_result(
@@ -1203,6 +1324,8 @@ async def crawl_biligame_page_visual(
             screenshot_wait_for=None,
             delay_before_return_html=None,
             wait_for_images=None,
+            preload_url=None,
+            preload_delay_s=None,
             headless=headless,
             pdf_from_png=pdf_from_png,
             print_scale=print_scale,
@@ -1231,6 +1354,7 @@ async def crawl_moegirl_page_visual(
         keep_files=keep_files,
         require_output_dir=True,
     )
+    session_id = f"visual-{_slug_from_url(url)}"
     return await _run_with_timeout(
         _crawl_page_visual(
             url,
@@ -1245,6 +1369,11 @@ async def crawl_moegirl_page_visual(
             screenshot_wait_for=6.0,
             delay_before_return_html=6.0,
             wait_for_images=True,
+            preload_url="https://mzh.moegirl.org.cn/Mainpage#/flow",
+            preload_delay_s=2.0,
+            wait_until="commit",
+            page_timeout_ms=60000,
+            session_id=session_id,
             headless=headless,
             pdf_from_png=pdf_from_png,
             print_scale=print_scale,
