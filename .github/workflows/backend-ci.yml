@@ -1,0 +1,69 @@
+name: MCP Backend CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+      GOOGLE_CSE_ID: ${{ secrets.GOOGLE_CSE_ID }}
+
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+
+      - name: Install system dependencies (Xvfb)
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            sudo apt-get update
+            sudo apt-get install -y xvfb
+          fi
+
+      - name: Setup virtual environment
+        run: |
+          uv venv --python 3.12
+          source .venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          source .venv/bin/activate
+          uv sync
+
+      - name: Install Playwright browsers and deps
+        run: |
+          source .venv/bin/activate
+          playwright install
+          playwright install-deps
+
+
+      - name: Start Web MCP service
+        run: |
+          source .venv/bin/activate
+          # --auto-servernum: 自动寻找空闲的显示端口
+          # --server-args: 设置屏幕分辨率，保证截图完整
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            nohup xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
+          else
+            nohup python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
+          fi
+          sleep 10
+
+
+      - name: Run pytest
+        run: |
+          source .venv/bin/activate
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pytest -q
+          else
+            pytest -q
+          fi
