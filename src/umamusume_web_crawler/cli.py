@@ -17,6 +17,12 @@ from umamusume_web_crawler.web.crawler import (
     crawl_page,
     crawl_page_visual_markitdown,
 )
+from umamusume_web_crawler.web.biligame import fetch_biligame_wikitext_expanded
+from umamusume_web_crawler.web.moegirl import fetch_moegirl_wikitext_expanded
+from umamusume_web_crawler.web.parse_wiki_infobox import (
+    parse_wiki_page,
+    wiki_page_to_llm_markdown,
+)
 
 
 def _detect_mode(url: str) -> str:
@@ -26,6 +32,38 @@ def _detect_mode(url: str) -> str:
     if "moegirl.org.cn" in host:
         return "moegirl"
     return "generic"
+
+
+def _title_from_url(value: str) -> str:
+    if not value.startswith("http://") and not value.startswith("https://"):
+        return value
+    parsed = urlparse(value)
+    if parsed.path.endswith("/index.php"):
+        params = urlparse(value).query
+        # simple parse
+        if "title=" in params:
+            import urllib.parse
+            q = urllib.parse.parse_qs(params)
+            return q.get("title", [""])[0] or "page"
+    return Path(parsed.path).name or "page"
+
+
+async def _run_api_crawl(url: str, site: str, use_proxy: bool | None) -> str:
+    print(f"[API-CRAWL] Fetching {url} via MediaWiki API...")
+    if site == "biligame":
+        wikitext = await fetch_biligame_wikitext_expanded(
+            url, max_depth=1, max_pages=5, use_proxy=use_proxy
+        )
+    elif site == "moegirl":
+        wikitext = await fetch_moegirl_wikitext_expanded(
+            url, max_depth=1, max_pages=5, use_proxy=use_proxy
+        )
+    else:
+        raise ValueError(f"Unsupported API site: {site}")
+
+    page = parse_wiki_page(wikitext, site=site)
+    heading = _title_from_url(url)
+    return wiki_page_to_llm_markdown(heading, page, site=site)
 
 
 def _proxy_flag(value: bool | None, *, default: bool) -> bool:
@@ -129,16 +167,14 @@ async def _run(args: argparse.Namespace) -> None:
                 capture_pdf=capture_pdf,
             )
     else:
+        # Default to API for supported sites if not in visual mode
         if mode == "biligame":
-            content = await crawl_biligame_page(
-                args.url, use_proxy=_proxy_flag(use_proxy, default=False)
-            )
+             content = await _run_api_crawl(args.url, "biligame", use_proxy)
         elif mode == "moegirl":
-            content = await crawl_moegirl_page(
-                args.url, use_proxy=_proxy_flag(use_proxy, default=True)
-            )
+             content = await _run_api_crawl(args.url, "moegirl", use_proxy)
         else:
-            content = await crawl_page(
+             # Fallback to headless browser for generic pages
+             content = await crawl_page(
                 args.url, use_proxy=_proxy_flag(use_proxy, default=False)
             )
 

@@ -7,7 +7,19 @@
 - 核心能力：站内搜索 + MediaWiki API 抓取 + 视觉抓取（Crawl4AI → PDF → MarkItDown）
 - 目标站点：Bilibili Wiki / 萌娘百科 + 通用网页
 - 运行形态：本地 CLI、Python 包调用、MCP 服务
-- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面
+-主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面
+
+## 爬取方案比较
+
+本项目提供三种爬取方式，CLI 根据 URL 类型自动选择最优方案：
+
+| 方案 | 描述 | 适用场景 | 默认启用 | 优点 | 缺点 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **MediaWiki API** | 调用官方 API 获取 Wikitext 并由本工具解析 | Bilibili Wiki, 萌娘百科 | **是** (针对这俩站点) | 极快、无头浏览开销、无视部分反爬 | 视觉排版丢失、依赖 API 解析规则 |
+| **Visual (PDF)** | Crawl4AI 截图 PDF -> MarkItDown 识别 | Bilibili Wiki, 萌娘百科, 通用网页 | **否** (需 `--visual`) | **排版还原度极高** (表格/公式/图片) | 慢 (需浏览器)、消耗资源、萌百可能需代理 |
+| **Crawl4AI Direct** | 浏览器渲染 HTML -> HTML转Markdown | 通用网页 | **是** (其他站点) | 快于视觉方案 | 反爬敏感、复杂 DOM 解析只有纯文本 |
+
+**注意**：萌娘百科对直接的 HTML 爬取有较强拦截 (WAF)，因此推荐默认的 API 方案，或使用 `--visual` 视觉方案（模拟真实浏览器行为）。
 
 ## 项目结构
 
@@ -43,8 +55,10 @@ umamusume-web-crawler/
 |-- .env.example                         # 环境变量模板
 |-- main.py                              # CLI 入口
 |-- mcpserver.py                         # MCP 入口
+|-- pyproject.toml                       # 项目配置 (uv/pip)
 |-- pytest.ini                           # pytest 配置
 |-- README.md                            # 说明文档
+|-- uv.lock                              # uv 依赖锁文件
 |-- examples/
 |-- results/
 ```
@@ -245,14 +259,24 @@ python main.py --url "https://wiki.biligame.com/umamusume/东海帝皇" --mode b
 python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --visual
 ```
 
-输出会写入 `results/crawl.md`（或使用 `--output` 指定）。
-
 ### 方式 3：命令行参数（仅限 CLI）
 
 如果你使用 `umamusume-crawler` 命令行工具，可以直接传递参数：
 
+**注意**：CLI 现在默认使用 MediaWiki API 进行快速抓取（Bwiki / 萌娘百科）。如需使用浏览器视觉抓取（Crawl4AI + MarkItDown），请加上 `--visual` 参数。
+
 ```bash
-umamusume-crawler --url "..." --google-api-key "YOUR_KEY" --google-cse-id "YOUR_ID"
+# 默认：使用 API 抓取（推荐，速度快）
+umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇"
+
+# 可选：指定输出路径（默认 results/crawl.md）
+umamusume-crawler --url "..." --output "my_data/result.md"
+
+# 可选：输出到终端 (stdout)
+umamusume-crawler --url "..." --output -
+
+# 可选：使用浏览器视觉抓取（慢，但支持完整页面渲染）
+umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇" --visual
 ```
 
 ## 集成指南（作为依赖库使用）
