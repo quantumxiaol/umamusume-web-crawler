@@ -6,6 +6,8 @@ import sys
 from urllib.parse import parse_qs, quote, unquote, urlparse
 from collections.abc import AsyncIterator
 
+from dotenv import load_dotenv
+
 import uvicorn
 from mcp.server import Server
 from mcp.server.fastmcp import FastMCP
@@ -251,6 +253,7 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
 
 
 def main() -> None:
+    load_dotenv()
     parser = argparse.ArgumentParser(description="Run Umamusume Web MCP server")
     parser.add_argument("--http", action="store_true", help="Use StreamableHTTP + SSE")
     parser.add_argument("--sse", action="store_true", help="Alias for --http")

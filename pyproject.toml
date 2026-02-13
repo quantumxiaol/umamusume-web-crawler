@@ -22,3 +22,7 @@ dependencies = [
     "starlette>=0.37.2",
     "uvicorn>=0.30.0",
 ]
+
+[project.scripts]
+umamusume-crawler = "umamusume_web_crawler.cli:main"
+umamusume-mcp = "umamusume_web_crawler.mcp.server:main"

@@ -247,6 +247,49 @@ python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --
 
 输出会写入 `results/crawl.md`（或使用 `--output` 指定）。
 
+### 方式 3：命令行参数（仅限 CLI）
+
+如果你使用 `umamusume-crawler` 命令行工具，可以直接传递参数：
+
+```bash
+umamusume-crawler --url "..." --google-api-key "YOUR_KEY" --google-cse-id "YOUR_ID"
+```
+
+## 集成指南（作为依赖库使用）
+
+如果通过 git 或 path 依赖将本包集成到你的项目中（例如使用 `uv`）：
+
+```toml
+[tool.uv.sources]
+umamusume-web-crawler = { git = "https://github.com/quantumxiaol/umamusume-web-crawler" }
+```
+
+**注意**：作为库引用时，它**不会**自动读取你的 `.env`。你需要手动传递配置。
+
+### 推荐做法：在项目入口处注入配置
+
+在你的主程序或初始化模块中（例如 `main.py` 或 `boot.py`）：
+
+```python
+from umamusume_web_crawler.config import config as crawler_config
+
+# 假设你从自己的配置系统（如 config.py 或 os.environ）获取了 Key
+MY_GOOGLE_API_KEY = "..."
+MY_GOOGLE_CSE_ID = "..."
+
+# 方式 1：手动传递值（最稳健）
+crawler_config.apply_overrides(
+    google_api_key=MY_GOOGLE_API_KEY,
+    google_cse_id=MY_GOOGLE_CSE_ID,
+    # 可选：如果需要代理
+    http_proxy="http://127.0.0.1:7890", 
+    https_proxy="http://127.0.0.1:7890",
+)
+
+# 方式 2：如果你已经加载了环境变量（例如使用了 python-dotenv）
+# crawler_config.update_from_env() 
+```
+
 ## 在其他项目中使用 MCP 服务（API 优先）
 
 1) 安装依赖（在你的项目中）
@@ -255,17 +298,23 @@ python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --
 pip install umamusume-web-crawler
 ```
 
-2) 配置环境变量（由你的应用负责加载）
-
-- `GOOGLE_API_KEY` / `GOOGLE_CSE_ID`：使用 `web_search_google` 时必需
-- `HTTP_PROXY` / `HTTPS_PROXY`：访问 Google/萌娘百科需要代理时设置
-- `CRAWLER_TIMEOUT_S`：单次爬取超时秒数（默认 300）
-
-3) 启动 MCP 服务（以模块方式运行）
+安装后，你可以直接使用命令行工具启动服务：
 
 ```bash
-python -m umamusume_web_crawler.mcp.server --http -p 7777
+# 自动加载当前目录下的 .env 文件
+umamusume-mcp --http -p 7777
 ```
+
+2) 配置环境变量
+
+你可以创建一个 `.env` 文件，`umamusume-mcp` 和 `umamusume-crawler` 会自动加载它：
+
+```env
+GOOGLE_API_KEY=xxx
+GOOGLE_CSE_ID=xxx
+```
+
+或者在运行命令前设置环境变量：
 
 4) 在你的应用里调用 MCP 工具（示例）
 

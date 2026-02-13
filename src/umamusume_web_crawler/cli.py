@@ -5,6 +5,10 @@ import asyncio
 from pathlib import Path
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
+
+from umamusume_web_crawler.config import config
+
 from umamusume_web_crawler.web.crawler import (
     crawl_biligame_page,
     crawl_biligame_page_visual_markitdown,
@@ -76,6 +80,16 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable PDF capture (fall back to PNG)",
     )
+    parser.add_argument(
+        "--google-api-key",
+        default=None,
+        help="Google API Key for search",
+    )
+    parser.add_argument(
+        "--google-cse-id",
+        default=None,
+        help="Google Custom Search Engine ID",
+    )
     return parser.parse_args()
 
 
@@ -139,7 +153,18 @@ async def _run(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
+    load_dotenv()
     args = parse_args()
+
+    overrides = {}
+    if args.google_api_key:
+        overrides["google_api_key"] = args.google_api_key
+    if args.google_cse_id:
+        overrides["google_cse_id"] = args.google_cse_id
+
+    if overrides:
+        config.apply_overrides(**overrides)
+
     asyncio.run(_run(args))
 
 
