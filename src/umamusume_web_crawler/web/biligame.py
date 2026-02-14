@@ -37,7 +37,7 @@ def _build_api_url(endpoint: str, params: Dict[str, str]) -> str:
 
 def _build_opener(use_proxy: bool | None) -> object:
     if use_proxy is False:
-        return build_opener()
+        return build_opener(ProxyHandler({}))
     proxy_url = config.proxy_url()
     if not proxy_url:
         return build_opener()

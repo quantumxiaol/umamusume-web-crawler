@@ -61,6 +61,10 @@ umamusume-web-crawler/
 |-- uv.lock                              # uv 依赖锁文件
 |-- examples/
 |-- results/
+|-- skills/
+|   |-- umamusume-wiki-crawler/          # Agent Skill: 维基爬虫
+|       |-- skill.md                     # Skill 定义
+|       |-- scripts/                     # Skill 脚本
 ```
 
 ## 环境
@@ -444,4 +448,43 @@ macOS 本地通常无需 `xvfb-run`。
 ```bash
 python tests/test_visual_capture_pdf.py
 python tests/test_mcp_tool_crawler.py -u http://127.0.0.1:7777/mcp/
+```
+
+## Agent Skills (实验性)
+
+本项目包含符合 Agent Skills 标准的 Skill 定义，可供支持该标准（如 Antigravity / Claude Code）的 AI Agent 直接调用。
+
+### `umamusume-wiki-crawler`
+
+位于 `skills/umamusume-wiki-crawler/`，提供**无头**快速抓取 Bilibili Wiki / 萌娘百科的能力。
+
+- **核心文件**: `skill.md` (定义), `scripts/crawl.py` (执行脚本)
+- **依赖**: 本项目环境 (`source .venv/bin/activate`)
+- **特点**: 
+  - 自动识别 URL (Bilibili/Moegirl)
+  - 使用 MediaWiki API (极快)
+  - 支持 `use_proxy` 无缝切换 (Moegirl 需代理时自动使用 .env 配置，也可强制直连)
+
+### 调试与集成
+
+**1. 手动调试**
+
+Skill 的本质是 Python 脚本。你可以直接在终端运行脚本来测试其功能：
+
+```bash
+# 确保依赖已安装
+uv sync
+source .venv/bin/activate
+
+# 测试抓取
+python skills/umamusume-wiki-crawler/scripts/crawl.py "https://wiki.biligame.com/umamusume/东海帝皇"
+```
+
+**2. 在 Agent 中使用 (Antigravity / Claude Code)**
+
+通常支持 Agent Skills 标准的工具会自动扫描其配置文件或项目根目录下的 `skills/` 目录。
+
+1.  **Clone 本仓库** 到你的工作区或 Agent 的项目目录中（或者将 `skills/` 文件夹复制到 Agent 指定的 skills 目录，如 `.antigravity/skills`）。
+2.  **安装依赖**：确保 Agent 运行环境中安装了本项目的依赖（如果不共享 venv，可能需要手动 `pip install umamusume-web-crawler` 或将依赖打包）。
+3.  **使用**：在与 Agent 对话时，直接以自然语言请求：“请帮我查一下Wiki上关于东海帝皇的资料”或“抓取萌娘百科关于赛马娘的页面”。Agent 会根据 `skill.md` 中的 `description` 自动匹配并调用该 Skill。
 ```
