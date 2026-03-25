@@ -1166,7 +1166,12 @@ async def _crawl_page_visual(
 
 
 async def crawl_page(
-    url: str, *, use_proxy: bool = False, timeout_s: float | None = None
+    url: str,
+    *,
+    use_proxy: bool = False,
+    timeout_s: float | None = None,
+    css_selector: str | None = None,
+    structured: bool = False,
 ) -> str:
     return await _run_with_timeout(
         _crawl_with_config(
@@ -1174,10 +1179,10 @@ async def crawl_page(
             target_url=None,
             source_url=None,
             use_proxy=use_proxy,
-            css_selector=None,
+            css_selector=css_selector,
             wait_for_selector=None,
             anti_bot=False,
-            structured=False,
+            structured=structured,
             allow_render_fallback=False,
             markdown_generator=None,
             extraction_strategy=None,
