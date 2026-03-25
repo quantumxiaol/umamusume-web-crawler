@@ -7,7 +7,7 @@
 - 核心能力：站内搜索 + MediaWiki API 抓取 + 视觉抓取（Crawl4AI → PDF → MarkItDown）
 - 目标站点：Bilibili Wiki / 萌娘百科 + 通用网页
 - 运行形态：本地 CLI、Python 包调用、MCP 服务
--主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面
+- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面（Bwiki）
 
 ## 爬取方案比较
 
@@ -15,7 +15,7 @@
 
 | 方案 | 描述 | 适用场景 | 默认启用 | 优点 | 缺点 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **MediaWiki API** | 调用官方 API 获取 Wikitext 并由本工具解析 | Bilibili Wiki, 萌娘百科 | **是** (针对这俩站点) | 极快、无头浏览开销、无视部分反爬 | 视觉排版丢失、依赖 API 解析规则 |
+| **MediaWiki API** | 调用官方 API 获取内容并由本工具解析（Bwiki: wikitext；萌百: extracts 纯文本） | Bilibili Wiki, 萌娘百科 | **是** (针对这俩站点) | 极快、无头浏览开销、无视部分反爬 | 视觉排版丢失、依赖 API 解析规则 |
 | **Visual (PDF)** | Crawl4AI 截图 PDF -> MarkItDown 识别 | Bilibili Wiki, 萌娘百科, 通用网页 | **否** (需 `--visual`) | **排版还原度极高** (表格/公式/图片) | 慢 (需浏览器)、消耗资源、萌百可能需代理 |
 | **Crawl4AI Direct** | 浏览器渲染 HTML -> HTML转Markdown | 通用网页 | **是** (其他站点) | 快于视觉方案 | 反爬敏感、复杂 DOM 解析只有纯文本 |
 
@@ -110,7 +110,7 @@ config.apply_overrides(crawler_timeout_s=180, http_proxy="http://127.0.0.1:7890"
 - `tests/test_biligame_crawler.py`
 - `tests/test_moegirl_crawler.py`
 
-Python API（站内搜索 → 拉取 wikitext → 展开子页面 → 清洗成 Markdown）：
+Python API（站内搜索 → 拉取 API 内容 → 清洗成 Markdown）：
 
 ```python
 from umamusume_web_crawler.web.moegirl import (
@@ -126,22 +126,22 @@ from umamusume_web_crawler.web.parse_wiki_infobox import (
     wiki_page_to_llm_markdown,
 )
 
-# 萌娘百科：搜索标题 → 拉取 wikitext → 展开子页面 → Markdown
+# 萌娘百科：搜索标题 → 拉取 extracts 纯文本 → Markdown
 titles = await search_moegirl_titles("东海帝王")
 target = titles[0] if titles else "东海帝王"
-wikitext = await fetch_moegirl_wikitext_expanded(
+moegirl_text = await fetch_moegirl_wikitext_expanded(
     target, max_depth=1, max_pages=5
 )
-page = parse_wiki_page(wikitext, site="moegirl")
+page = parse_wiki_page(moegirl_text, site="moegirl")
 md = wiki_page_to_llm_markdown(target, page, site="moegirl")
 
 # Bilibili Wiki：搜索标题 → 拉取 wikitext → 展开子页面 → Markdown
 titles = await search_biligame_titles("东海帝皇")
 target = titles[0] if titles else "东海帝皇"
-wikitext = await fetch_biligame_wikitext_expanded(
+biligame_wikitext = await fetch_biligame_wikitext_expanded(
     target, max_depth=1, max_pages=5
 )
-page = parse_wiki_page(wikitext, site="biligame")
+page = parse_wiki_page(biligame_wikitext, site="biligame")
 md = wiki_page_to_llm_markdown(target, page, site="biligame")
 ```
 
@@ -151,6 +151,7 @@ md = wiki_page_to_llm_markdown(target, page, site="biligame")
 - `use_proxy` 为 `None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY` 配置。
 - `CRAWLER_USER_DATA_DIR` 会启用持久化浏览器 profile（复用 Cookie/会话）。
 - MediaWiki API 模块也支持 `use_proxy` 参数；萌娘百科直连即可访问时可不启用代理。
+- 萌娘百科当前默认使用 `action=query&prop=extracts&explaintext=1` 获取文本；`max_depth/max_pages` 参数会保留，但通常不会像 wikitext 那样扩展 transclusion。
 
 如需走“视觉抓取”（Crawl4AI → PDF → MarkItDown），参考旧方案：
 ```python
@@ -234,13 +235,14 @@ TEST_RESULT: PASSED
 
 当前 MCP 默认走 MediaWiki API 抓取，再做结构化清洗输出 Markdown：
 
-1) 调用 Wiki API 拉取 wikitext。
+1) 调用 Wiki API 拉取内容（Bwiki: wikitext；萌百: extracts 纯文本）。
 2) 解析 infobox/sections/transclusion 并转成 Markdown（可选 LLM 友好渲染）。
 3) MCP 工具 `crawl_biligame_wiki` / `crawl_moegirl_wiki` 返回 Markdown。
 
 说明：
 - 视觉抓取方案仍保留，可通过 CLI `--visual` 或 Python API 调用。
-- Bwiki/萌娘百科可通过 `fetch_*_wikitext_expanded` 展开子页面，提升内容完整度。
+- Bwiki 可通过 `fetch_biligame_wikitext_expanded` 展开子页面，提升内容完整度。
+- 萌娘百科因上游 API 权限限制，当前主要返回 extracts 纯文本。
 
 ## 探索经过（简述）
 
