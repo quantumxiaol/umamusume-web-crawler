@@ -69,18 +69,20 @@ def _extract_page(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {}
 
 
-def _extract_wikitext_from_page(page: Dict[str, Any]) -> str:
-    revisions = page.get("revisions") or []
-    if not revisions:
-        return ""
-    revision = revisions[0]
-    if isinstance(revision, dict):
-        if "slots" in revision:
-            slots = revision.get("slots") or {}
-            main = slots.get("main") or {}
-            return str(main.get("*") or main.get("content") or "")
-        return str(revision.get("*") or revision.get("content") or "")
-    return ""
+def _extract_api_error(payload: Dict[str, Any]) -> tuple[str, str] | None:
+    error = payload.get("error")
+    if not isinstance(error, dict):
+        return None
+    code = str(error.get("code") or "")
+    info = str(error.get("info") or error.get("*") or "")
+    if not code and not info:
+        return None
+    return code, info
+
+
+def _extract_plaintext_from_page(page: Dict[str, Any]) -> str:
+    extract = page.get("extract")
+    return str(extract or "").strip()
 
 
 def _extract_parse_html(payload: Dict[str, Any]) -> str:
@@ -112,24 +114,28 @@ async def fetch_moegirl_wikitext(
     title = _normalize_title(title_or_url)
     if not title:
         raise ValueError("Missing moegirl page title.")
-    params = {
+    extract_params = {
         "action": "query",
-        "prop": "revisions",
-        "rvprop": "content",
-        "rvslots": "main",
+        "prop": "extracts",
+        "explaintext": "1",
         "format": "json",
         "formatversion": "2",
         "titles": title,
     }
-    url = _build_api_url(endpoint, params)
-    payload = await asyncio.to_thread(
-        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy
+    extract_url = _build_api_url(endpoint, extract_params)
+    extract_payload = await asyncio.to_thread(
+        _request_json, extract_url, timeout_s=timeout_s, use_proxy=use_proxy
     )
-    page = _extract_page(payload)
-    content = _extract_wikitext_from_page(page)
-    if not content:
-        raise RuntimeError("Moegirl API returned empty wikitext.")
-    return content
+    extract_page = _extract_page(extract_payload)
+    extract_text = _extract_plaintext_from_page(extract_page)
+    if extract_text:
+        return extract_text
+
+    extract_error = _extract_api_error(extract_payload)
+    if extract_error:
+        code, info = extract_error
+        raise RuntimeError(f"Moegirl API returned no content (extracts={code}:{info}).")
+    raise RuntimeError("Moegirl API returned empty content.")
 
 
 async def fetch_moegirl_wikitext_expanded(
