@@ -7,7 +7,7 @@
 - 核心能力：站内搜索 + MediaWiki API 抓取 + 视觉抓取（Crawl4AI → PDF → MarkItDown）
 - 目标站点：Bilibili Wiki / 萌娘百科 + 通用网页
 - 运行形态：本地 CLI、Python 包调用、MCP 服务
-- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面（Bwiki）
+- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面（Bwiki）、角色音频/图片批量下载
 
 ## 爬取方案比较
 
@@ -35,6 +35,7 @@ umamusume-web-crawler/
 |   |   |   |-- server.py                # Web MCP 服务（搜索 + 抓取工具）
 |   |   |-- web/
 |   |   |   |-- __init__.py              # Web 子模块入口
+|   |   |   |-- biligame_assets.py       # Bwiki 角色音频/图片抓取
 |   |   |   |-- crawler.py               # Crawl4AI 抓取封装
 |   |   |   |-- biligame.py              # Bilibili Wiki API 访问
 |   |   |   |-- moegirl.py               # 萌娘百科 API 访问
@@ -121,6 +122,10 @@ from umamusume_web_crawler.web.biligame import (
     fetch_biligame_wikitext_expanded,
     search_biligame_titles,
 )
+from umamusume_web_crawler.web.biligame_assets import (
+    crawl_biligame_character_assets,
+    load_characters_from_json,
+)
 from umamusume_web_crawler.web.umamusu_wiki import (
     download_umamusu_category_images,
     fetch_umamusu_wikitext_expanded,
@@ -164,6 +169,22 @@ downloads = await download_umamusu_category_images(
     delay_s=0.5,
     max_files=10,
 )
+
+# Bilibili Wiki：批量抓角色音频/立绘
+targets = {"特别周": "Special Week", "东海帝皇": "Tokai Teio"}
+summary = await crawl_biligame_character_assets(
+    targets,
+    audio_output_root="results/voicedata",
+    image_output_root="results/imagedata/characters",
+    request_delay=0.2,
+    page_delay=0.5,
+    concurrency=4,
+    skip_audio=False,
+    skip_images=False,
+)
+
+# 或从 json 角色映射读取
+targets = load_characters_from_json("umamusume_characters.json")
 ```
 
 说明：
@@ -201,6 +222,7 @@ capture = await crawl_biligame_page_visual(
 ```
 
 CLI 参数：
+- `--task`（`page` / `biligame-assets`，默认 `page`）
 - `--mode`（auto/biligame/moegirl/umamusu/generic）
 - `--visual`（启用 PDF -> MarkItDown 视觉抓取）
 - `--visual-dir`（视觉抓取输出目录）
@@ -209,6 +231,11 @@ CLI 参数：
 - `--print-scale`（萌娘百科视觉抓取缩放）
 - `--headless`（视觉抓取 headless 模式）
 - `--capture-pdf` / `--no-capture-pdf`
+- `--audio-output` / `--image-output`（`biligame-assets` 模式的音频/图片输出目录）
+- `--skip-audio` / `--skip-images`（`biligame-assets` 模式可单独关闭）
+- `--character` + `--name`（指定要抓的角色；不传则读取 `--characters-json`）
+- `--request-delay` / `--page-delay` / `--concurrency`（资源下载频率控制）
+- `--asset-summary-output`（把资源抓取结果写入 JSON）
 
 MCP 工具参数（示例）：
 
@@ -298,6 +325,23 @@ python main.py --url "https://wiki.biligame.com/umamusume/东海帝皇" --mode b
 python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --visual
 ```
 
+3) 本地 CLI 批量抓取 Bwiki 角色音频/图片
+
+```bash
+# 单角色：只抓图片
+python main.py --task biligame-assets \
+  --character 特别周 \
+  --name "Special Week" \
+  --skip-audio \
+  --image-output results/imagedata/characters \
+  --asset-summary-output results/biligame_assets.json
+
+# 使用默认 umamusume_characters.json 批量抓取音频+图片
+python main.py --task biligame-assets \
+  --audio-output results/voicedata \
+  --image-output results/imagedata/characters
+```
+
 ### 方式 3：命令行参数（仅限 CLI）
 
 如果你使用 `umamusume-crawler` 命令行工具，可以直接传递参数：
@@ -316,7 +360,27 @@ umamusume-crawler --url "..." --output -
 
 # 可选：使用浏览器视觉抓取（慢，但支持完整页面渲染）
 umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇" --visual
+
+# Bwiki 角色资源抓取：单角色只抓图片
+umamusume-crawler --task biligame-assets \
+  --character 特别周 \
+  --name "Special Week" \
+  --skip-audio \
+  --image-output results/imagedata/characters
+
+# Bwiki 角色资源抓取：按 umamusume_characters.json 批量抓音频+图片
+umamusume-crawler --task biligame-assets \
+  --audio-output results/voicedata \
+  --image-output results/imagedata/characters \
+  --asset-summary-output results/biligame_assets.json
 ```
+
+`biligame-assets` 模式说明：
+- 默认读取 `umamusume_characters.json`，也可用 `--character`/`--name` 显式指定角色。
+- 输出目录默认分别为 `results/voicedata` 与 `results/imagedata/characters`。
+- 角色级目录会继续按英文名追加一层，例如 `results/voicedata/Special Week/`、`results/imagedata/characters/Special Week/`。
+- 可通过 `--audio-output` 和 `--image-output` 改成任意自定义根目录。
+- 该模式通过真实浏览器渲染 Bwiki 页面后提取音频节点与立绘图片，适合资源下载，不走 MediaWiki API Markdown 输出链路。
 
 ## 集成指南（作为依赖库使用）
 

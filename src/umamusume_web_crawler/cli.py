@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import json
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -18,6 +19,13 @@ from umamusume_web_crawler.web.crawler import (
     crawl_page_visual_markitdown,
 )
 from umamusume_web_crawler.web.biligame import fetch_biligame_wikitext_expanded
+from umamusume_web_crawler.web.biligame_assets import (
+    DEFAULT_AUDIO_OUTPUT_ROOT,
+    DEFAULT_CHARACTERS_JSON,
+    DEFAULT_IMAGE_OUTPUT_ROOT,
+    crawl_biligame_character_assets,
+    load_characters_from_json,
+)
 from umamusume_web_crawler.web.moegirl import fetch_moegirl_wikitext_expanded
 from umamusume_web_crawler.web.umamusu_wiki import fetch_umamusu_wikitext_expanded
 from umamusume_web_crawler.web.parse_wiki_infobox import (
@@ -77,9 +85,23 @@ def _proxy_flag(value: bool | None, *, default: bool) -> bool:
     return default if value is None else value
 
 
+def _resolve_asset_targets(args: argparse.Namespace) -> dict[str, str]:
+    if args.character:
+        if not args.name or len(args.character) != len(args.name):
+            raise SystemExit("--character and --name must be provided with the same count.")
+        return dict(zip(args.character, args.name, strict=True))
+    return load_characters_from_json(args.characters_json)
+
+
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Crawl a web page and output markdown")
-    parser.add_argument("--url", required=True, help="Target URL to crawl")
+    parser = argparse.ArgumentParser(description="Umamusume crawler CLI")
+    parser.add_argument(
+        "--task",
+        choices=("page", "biligame-assets"),
+        default="page",
+        help="Task to run (default: page)",
+    )
+    parser.add_argument("--url", help="Target URL to crawl")
     parser.add_argument(
         "--mode",
         choices=("auto", "biligame", "moegirl", "umamusu", "generic"),
@@ -135,12 +157,110 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Google Custom Search Engine ID",
     )
+    parser.add_argument(
+        "--audio-output",
+        default=DEFAULT_AUDIO_OUTPUT_ROOT,
+        help=f"Audio output root directory (default: {DEFAULT_AUDIO_OUTPUT_ROOT})",
+    )
+    parser.add_argument(
+        "--image-output",
+        default=DEFAULT_IMAGE_OUTPUT_ROOT,
+        help=f"Image output root directory (default: {DEFAULT_IMAGE_OUTPUT_ROOT})",
+    )
+    parser.add_argument(
+        "--skip-images",
+        action="store_true",
+        help="Skip crawling character images.",
+    )
+    parser.add_argument(
+        "--skip-audio",
+        action="store_true",
+        help="Skip crawling audio files.",
+    )
+    parser.add_argument(
+        "--character",
+        action="append",
+        help="Biligame wiki page suffix to crawl (can be repeated).",
+    )
+    parser.add_argument(
+        "--name",
+        action="append",
+        help="English name for each --character, same order as provided.",
+    )
+    parser.add_argument(
+        "--dump-html",
+        default=None,
+        help="Optional directory to dump raw HTML for debugging.",
+    )
+    parser.add_argument(
+        "--characters-json",
+        default=DEFAULT_CHARACTERS_JSON,
+        help=f"Characters mapping json file (default: {DEFAULT_CHARACTERS_JSON})",
+    )
+    parser.add_argument(
+        "--request-delay",
+        type=float,
+        default=0.2,
+        help="Delay in seconds before each asset download (default: 0.2)",
+    )
+    parser.add_argument(
+        "--page-delay",
+        type=float,
+        default=0.5,
+        help="Delay in seconds between character pages (default: 0.5)",
+    )
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        default=4,
+        help="Max concurrent asset downloads (default: 4)",
+    )
+    parser.add_argument(
+        "--asset-summary-output",
+        default=None,
+        help="Optional JSON file to store biligame asset crawl summary.",
+    )
+    parser.add_argument(
+        "--asset-quiet",
+        action="store_true",
+        help="Reduce biligame asset crawl logging.",
+    )
     return parser.parse_args()
 
 
 async def _run(args: argparse.Namespace) -> None:
-    mode = _detect_mode(args.url) if args.mode == "auto" else args.mode
     use_proxy = True if args.use_proxy else False if args.no_proxy else None
+    if args.task == "biligame-assets":
+        if args.skip_audio and args.skip_images:
+            raise SystemExit("--skip-audio and --skip-images cannot both be set.")
+        targets = _resolve_asset_targets(args)
+        summary = await crawl_biligame_character_assets(
+            targets,
+            audio_output_root=args.audio_output,
+            image_output_root=args.image_output,
+            dump_html_dir=args.dump_html,
+            request_delay=args.request_delay,
+            page_delay=args.page_delay,
+            concurrency=args.concurrency,
+            skip_audio=args.skip_audio,
+            skip_images=args.skip_images,
+            use_proxy=use_proxy,
+            verbose=not args.asset_quiet,
+        )
+        if args.asset_summary_output:
+            output_path = Path(args.asset_summary_output)
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(
+                json.dumps(summary, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            print(f"Wrote asset summary to {output_path}")
+        return
+
+    if not args.url:
+        raise SystemExit("--url is required when --task page.")
+
+    mode = _detect_mode(args.url) if args.mode == "auto" else args.mode
     capture_pdf = True
     if args.no_capture_pdf:
         capture_pdf = False
