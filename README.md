@@ -121,6 +121,11 @@ from umamusume_web_crawler.web.biligame import (
     fetch_biligame_wikitext_expanded,
     search_biligame_titles,
 )
+from umamusume_web_crawler.web.umamusu_wiki import (
+    download_umamusu_category_images,
+    fetch_umamusu_wikitext_expanded,
+    search_umamusu_titles,
+)
 from umamusume_web_crawler.web.parse_wiki_infobox import (
     parse_wiki_page,
     wiki_page_to_llm_markdown,
@@ -143,6 +148,22 @@ biligame_wikitext = await fetch_biligame_wikitext_expanded(
 )
 page = parse_wiki_page(biligame_wikitext, site="biligame")
 md = wiki_page_to_llm_markdown(target, page, site="biligame")
+
+# umamusu.wiki：搜索标题 / 抓页面 / 批量下载分类图片
+titles = await search_umamusu_titles("Agnes Tachyon")
+target = titles[0] if titles else "Agnes Tachyon"
+umamusu_wikitext = await fetch_umamusu_wikitext_expanded(
+    target, max_depth=1, max_pages=5
+)
+page = parse_wiki_page(umamusu_wikitext, site="umamusu")
+md = wiki_page_to_llm_markdown(target, page, site="umamusu")
+
+downloads = await download_umamusu_category_images(
+    "Category:Game_Backgrounds",
+    output_dir="results/umamusu/backgrounds",
+    delay_s=0.5,
+    max_files=10,
+)
 ```
 
 说明：
@@ -180,7 +201,7 @@ capture = await crawl_biligame_page_visual(
 ```
 
 CLI 参数：
-- `--mode`（auto/biligame/moegirl/generic）
+- `--mode`（auto/biligame/moegirl/umamusu/generic）
 - `--visual`（启用 PDF -> MarkItDown 视觉抓取）
 - `--visual-dir`（视觉抓取输出目录）
 - `--output`（输出 Markdown 路径，`-` 为 stdout）
@@ -208,6 +229,18 @@ MCP 工具参数（示例）：
   "tool": "crawl_biligame_wiki",
   "args": {
     "url": "https://wiki.biligame.com/umamusume/东海帝皇",
+    "max_depth": 1,
+    "max_pages": 5,
+    "use_proxy": false
+  }
+}
+```
+
+```json
+{
+  "tool": "crawl_umamusu_wiki",
+  "args": {
+    "url": "https://umamusu.wiki/List_of_Characters",
     "max_depth": 1,
     "max_pages": 5,
     "use_proxy": false
@@ -369,8 +402,11 @@ GOOGLE_CSE_ID=xxx
 - `crawl_google_page(query, num?, use_proxy?)`
 - `biligame_wiki_seaech(keyword, limit?, use_proxy?)`
 - `moegirl_wiki_search(keyword, limit?, use_proxy?)`
+- `umamusu_wiki_search(keyword, limit?, use_proxy?)`
 - `crawl_biligame_wiki(url, max_depth?, max_pages?, use_proxy?)`
 - `crawl_moegirl_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `crawl_umamusu_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `download_umamusu_category_images(category, output_dir?, max_files?, delay_s?, use_proxy?)`
 
 说明：
 - MCP 工具默认使用 API 抓取，不生成中间 PDF/PNG。

@@ -19,6 +19,7 @@ from umamusume_web_crawler.web.crawler import (
 )
 from umamusume_web_crawler.web.biligame import fetch_biligame_wikitext_expanded
 from umamusume_web_crawler.web.moegirl import fetch_moegirl_wikitext_expanded
+from umamusume_web_crawler.web.umamusu_wiki import fetch_umamusu_wikitext_expanded
 from umamusume_web_crawler.web.parse_wiki_infobox import (
     parse_wiki_page,
     wiki_page_to_llm_markdown,
@@ -31,6 +32,8 @@ def _detect_mode(url: str) -> str:
         return "biligame"
     if "moegirl.org.cn" in host:
         return "moegirl"
+    if "umamusu.wiki" in host:
+        return "umamusu"
     return "generic"
 
 
@@ -58,6 +61,10 @@ async def _run_api_crawl(url: str, site: str, use_proxy: bool | None) -> str:
         wikitext = await fetch_moegirl_wikitext_expanded(
             url, max_depth=1, max_pages=5, use_proxy=use_proxy
         )
+    elif site == "umamusu":
+        wikitext = await fetch_umamusu_wikitext_expanded(
+            url, max_depth=1, max_pages=5, use_proxy=use_proxy
+        )
     else:
         raise ValueError(f"Unsupported API site: {site}")
 
@@ -75,7 +82,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--url", required=True, help="Target URL to crawl")
     parser.add_argument(
         "--mode",
-        choices=("auto", "biligame", "moegirl", "generic"),
+        choices=("auto", "biligame", "moegirl", "umamusu", "generic"),
         default="auto",
         help="Crawl mode (default: auto)",
     )
@@ -172,6 +179,8 @@ async def _run(args: argparse.Namespace) -> None:
              content = await _run_api_crawl(args.url, "biligame", use_proxy)
         elif mode == "moegirl":
              content = await _run_api_crawl(args.url, "moegirl", use_proxy)
+        elif mode == "umamusu":
+             content = await _run_api_crawl(args.url, "umamusu", use_proxy)
         else:
              # Fallback to headless browser for generic pages
              content = await crawl_page(

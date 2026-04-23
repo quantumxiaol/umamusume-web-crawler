@@ -26,6 +26,12 @@ from umamusume_web_crawler.web.moegirl import (
     fetch_moegirl_wikitext_expanded,
     search_moegirl_titles,
 )
+from umamusume_web_crawler.web.umamusu_wiki import (
+    DEFAULT_BASE_URL as _UMAMUSU_BASE_URL,
+    download_umamusu_category_images as _download_umamusu_category_images,
+    fetch_umamusu_wikitext_expanded,
+    search_umamusu_titles,
+)
 from umamusume_web_crawler.web.parse_wiki_infobox import (
     parse_wiki_page,
     wiki_page_to_llm_markdown,
@@ -133,6 +139,29 @@ async def moegirl_wiki_search(
 
 @mcp.tool(
     description="""
+Search umamusu.wiki for a character/page title and return candidate wiki links.
+"""
+)
+async def umamusu_wiki_search(
+    keyword: str, limit: int = 5, use_proxy: bool | None = None
+) -> dict:
+    try:
+        titles = await search_umamusu_titles(keyword, limit=limit, use_proxy=use_proxy)
+        results = [
+            {
+                "title": title,
+                "url": _build_wiki_url(_UMAMUSU_BASE_URL, title),
+                "priority": str(idx + 1),
+            }
+            for idx, title in enumerate(titles)
+        ]
+        return {"results": results}
+    except Exception as exc:
+        return {"results": [], "error": str(exc)}
+
+
+@mcp.tool(
+    description="""
 Crawl a Bilibili Wiki page via API and return the parsed Markdown output.
 Use this for wiki.biligame.com/umamusume pages. Supports optional transclusion expansion.
 """
@@ -181,6 +210,65 @@ async def crawl_moegirl_wiki(
         heading = _title_from_url(url)
         markdown = wiki_page_to_llm_markdown(heading, page, site="moegirl")
         return {"status": "success", "result": markdown}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+@mcp.tool(
+    description="""
+Crawl a umamusu.wiki page via MediaWiki API and return the parsed Markdown output.
+Use this for pages like List_of_Characters or character pages on umamusu.wiki.
+"""
+)
+async def crawl_umamusu_wiki(
+    url: str,
+    max_depth: int = 1,
+    max_pages: int = 5,
+    use_proxy: bool | None = None,
+) -> dict:
+    try:
+        wikitext = await fetch_umamusu_wikitext_expanded(
+            url,
+            max_depth=max_depth,
+            max_pages=max_pages,
+            use_proxy=use_proxy,
+        )
+        page = parse_wiki_page(wikitext, site="umamusu")
+        heading = _title_from_url(url)
+        markdown = wiki_page_to_llm_markdown(heading, page, site="umamusu")
+        return {"status": "success", "result": markdown}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+
+@mcp.tool(
+    description="""
+Download image files from a umamusu.wiki category such as Category:Game_Backgrounds.
+Uses MediaWiki categorymembers pagination and then imageinfo URLs for each file.
+"""
+)
+async def download_umamusu_category_images(
+    category: str,
+    output_dir: str = "results/umamusu_wiki_images",
+    max_files: int | None = None,
+    delay_s: float = 0.5,
+    use_proxy: bool | None = None,
+) -> dict:
+    try:
+        downloads = await _download_umamusu_category_images(
+            category,
+            output_dir=output_dir,
+            max_files=max_files,
+            delay_s=delay_s,
+            use_proxy=use_proxy,
+        )
+        return {
+            "status": "success",
+            "category": category,
+            "output_dir": output_dir,
+            "count": len(downloads),
+            "downloaded": downloads,
+        }
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
 
