@@ -1,177 +1,153 @@
 # Umamusume Web Crawler
 
-提供 Web MCP 搜索/抓取工具与本地 CLI，将网页内容整理为 Markdown。
+围绕 3 个赛马娘 Wiki 的搜索、抓取与部分资源下载工具集：
 
-## 项目总结
+- `wiki.biligame.com/umamusume`
+- `mzh.moegirl.org.cn`
+- `umamusu.wiki`
 
-- 核心能力：站内搜索 + MediaWiki API 抓取 + 视觉抓取（Crawl4AI → PDF → MarkItDown）
-- 目标站点：Bilibili Wiki / 萌娘百科 + 通用网页
-- 运行形态：本地 CLI、Python 包调用、MCP 服务
-- 主要特性：可选代理、超时控制、中间文件持久化、可展开 Transclusion 子页面（Bwiki）、角色音频/图片批量下载
+同时保留 Google 搜索能力，以及一套不再作为主流程推荐的视觉抓取方案。
 
-## 爬取方案比较
+## 当前定位
 
-本项目提供三种爬取方式，CLI 根据 URL 类型自动选择最优方案：
+当前代码的主线能力是：
 
-| 方案 | 描述 | 适用场景 | 默认启用 | 优点 | 缺点 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **MediaWiki API** | 调用官方 API 获取内容并由本工具解析（Bwiki: wikitext；萌百: extracts 纯文本） | Bilibili Wiki, 萌娘百科 | **是** (针对这俩站点) | 极快、无头浏览开销、无视部分反爬 | 视觉排版丢失、依赖 API 解析规则 |
-| **Visual (PDF)** | Crawl4AI 截图 PDF -> MarkItDown 识别 | Bilibili Wiki, 萌娘百科, 通用网页 | **否** (需 `--visual`) | **排版还原度极高** (表格/公式/图片) | 慢 (需浏览器)、消耗资源、萌百可能需代理 |
-| **Crawl4AI Direct** | 浏览器渲染 HTML -> HTML转Markdown | 通用网页 | **是** (其他站点) | 快于视觉方案 | 反爬敏感、复杂 DOM 解析只有纯文本 |
+- 三站 wiki 的标题搜索
+- 三站 wiki 的页面抓取与 Markdown 化
+- 部分资源下载
+  - Biligame：角色音频/图片批量下载
+  - umamusu.wiki：分类图片批量下载
+- Google 搜索
 
-**注意**：萌娘百科对直接的 HTML 爬取有较强拦截 (WAF)，因此推荐默认的 API 方案，或使用 `--visual` 视觉方案（模拟真实浏览器行为）。
+不再作为主流程推荐的能力：
 
-## 项目结构
+- Crawl4AI 视觉抓取
+- PDF -> MarkItDown 路线
+- 通用网页直接抓取
 
-```
-umamusume-web-crawler/
-|-- src/
-|   |-- umamusume_web_crawler/
-|   |   |-- __init__.py                  # 包入口
-|   |   |-- cli.py                       # CLI 入口
-|   |   |-- config.py                    # 环境变量配置
-|   |   |-- mcp/
-|   |   |   |-- __init__.py              # MCP 包入口
-|   |   |   |-- server.py                # Web MCP 服务（搜索 + 抓取工具）
-|   |   |-- web/
-|   |   |   |-- __init__.py              # Web 子模块入口
-|   |   |   |-- biligame_assets.py       # Bwiki 角色音频/图片抓取
-|   |   |   |-- crawler.py               # Crawl4AI 抓取封装
-|   |   |   |-- biligame.py              # Bilibili Wiki API 访问
-|   |   |   |-- moegirl.py               # 萌娘百科 API 访问
-|   |   |   |-- parse_wiki_infobox.py    # Wiki 解析与 Markdown 渲染
-|   |   |   |-- process.py               # MarkItDown 转换封装
-|   |   |   |-- search.py                # Google 搜索封装
-|   |   |   |-- smart_split.py           # 分段工具
-|-- tests/
-|   |-- test_biligame_crawler.py         # Bilibili Wiki 抓取测试
-|   |-- test_crawler.py                  # 通用爬虫测试
-|   |-- test_google.py                   # Google 搜索测试
-|   |-- test_mcp_tool_crawler.py         # MCP 抓取工具测试
-|   |-- test_mcp_tool_crawler_moegirl.py # MCP 萌娘百科抓取测试
-|   |-- test_mcp_tool_google.py          # MCP 搜索工具测试
-|   |-- test_moegirl_crawler.py          # 萌娘百科抓取测试
-|   |-- test_search_title.py             # 站内搜索测试
-|   |-- test_visual_capture_pdf.py       # 视觉抓取 PDF/PNG
-|-- .env.example                         # 环境变量模板
-|-- main.py                              # CLI 入口
-|-- mcpserver.py                         # MCP 入口
-|-- pyproject.toml                       # 项目配置 (uv/pip)
-|-- pytest.ini                           # pytest 配置
-|-- README.md                            # 说明文档
-|-- uv.lock                              # uv 依赖锁文件
-|-- examples/
-|-- results/
-|-- skills/
-|   |-- umamusume-wiki-crawler/          # Agent Skill: 维基爬虫
-|       |-- skill.md                     # Skill 定义
-|       |-- scripts/                     # Skill 脚本
-```
+这些能力仍然保留在代码里，但 README 将它们放在“历史方案 / 保留能力”里，不作为默认推荐用法。
 
-## 环境
+## 能力矩阵
 
-使用 uv 管理环境。
+| 能力 | Python API | 主 CLI `umamusume-crawler` | MCP `umamusume-mcp` | Skill `skills/umamusume-wiki-crawler` |
+| :--- | :--- | :--- | :--- | :--- |
+| Google 搜索 | 有 | 无独立入口 | 有 | 无 |
+| Biligame 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
+| Moegirl 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
+| umamusu.wiki 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
+| Biligame 页面抓取 | 有 | 有 | 有 | 有 |
+| Moegirl 页面抓取 | 有 | 有 | 有 | 有 |
+| umamusu.wiki 页面抓取 | 有 | 有 | 有 | 有 |
+| Biligame 角色音频/图片下载 | 有 | 有 | 无 | 无 |
+| umamusu.wiki 分类图片下载 | 有 | 无 | 有 | 有 |
+| 视觉抓取 | 有 | 有 | 无 | 无 |
+
+补充说明：
+
+- 主 CLI 现在是两个任务：
+  - `--task page`：页面抓取
+  - `--task biligame-assets`：Biligame 角色音频/图片下载
+- skill 目前只封装三站 wiki 搜索/抓取和 `umamusu.wiki` 分类图片下载，不包含 Google 搜索，也不包含 Biligame 角色资源下载。
+- MCP 目前包含 Google 搜索、三站 wiki 搜索/抓取、`umamusu.wiki` 分类图片下载，不包含 Biligame 角色资源下载。
+
+## 代码结构
+
+核心文件：
+
+- [src/umamusume_web_crawler/cli.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/cli.py:1)
+  主 CLI 入口。支持页面抓取和 `biligame-assets` 两类任务。
+- [src/umamusume_web_crawler/mcp/server.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/mcp/server.py:1)
+  MCP 服务与工具定义。
+- [src/umamusume_web_crawler/web/biligame.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/biligame.py:1)
+  Biligame MediaWiki API 访问。
+- [src/umamusume_web_crawler/web/moegirl.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/moegirl.py:1)
+  Moegirl API 访问。
+- [src/umamusume_web_crawler/web/umamusu_wiki.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/umamusu_wiki.py:1)
+  `umamusu.wiki` 搜索、抓取、分类图片下载。
+- [src/umamusume_web_crawler/web/biligame_assets.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/biligame_assets.py:1)
+  Biligame 角色音频/图片批量下载。
+- [src/umamusume_web_crawler/web/search.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/search.py:1)
+  Google 搜索封装。
+- [skills/umamusume-wiki-crawler/skill.md](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/skill.md:1)
+  skill 说明。
+- [skills/umamusume-wiki-crawler/scripts/crawl.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/scripts/crawl.py:1)
+  skill 使用的 CLI 包装器。
+
+包装入口：
+
+- `python main.py`
+- `python mcpserver.py`
+- `umamusume-crawler`
+- `umamusume-mcp`
+
+## 安装与环境
 
 ```bash
 uv lock
 uv sync
 source .venv/bin/activate
 playwright install
-
-cat .env.example > .env
 ```
 
-在 `.env` 中设置：
+环境变量：
+
 - `GOOGLE_API_KEY`
 - `GOOGLE_CSE_ID`
-- `HTTP_PROXY` / `HTTPS_PROXY`（可选，如访问 google、萌娘百科需要代理时再设置；未设置则直接访问）
-- `CRAWLER_TIMEOUT_S`（可选，单次爬取超时秒数，默认 300）
-- `CRAWLER_USER_DATA_DIR`（可选，持久化浏览器 profile 目录，用于绕过首次验证/WAF）
+- `HTTP_PROXY` / `HTTPS_PROXY`
+- `CRAWLER_TIMEOUT_S`
+- `CRAWLER_USER_DATA_DIR`
 
-说明：作为库使用时不会自动读取 `.env`。请在调用方应用中自行加载环境变量（例如使用 `python-dotenv`），
-或直接在系统环境中设置；`python main.py` / `python mcpserver.py` 会自动尝试加载当前目录下的 `.env`。
+说明：
 
-请在 [Google Cloud 凭证控制台](https://console.cloud.google.com/apis/credentials)中创建GOOGLE_API_KEY，并使用[可编程搜索引擎](https://programmablesearchengine.google.com/controlpanel/create)创建GOOGLE_CSE_ID。
+- `GOOGLE_API_KEY` / `GOOGLE_CSE_ID` 只在 Google 搜索相关能力中需要。
+- 三站 wiki 的 API 抓取本身不依赖 Google。
+- `main.py` 与 `mcpserver.py` 会自动尝试加载当前目录 `.env`。
+- 作为 Python 库调用时，不会自动读取 `.env`，请自行 `load_dotenv()` 或直接传环境变量。
 
-如果你在另一个项目中调用本包，可以用两种方式更新配置：
+## Python API
 
-```python
-from umamusume_web_crawler.config import config
-
-# 方式 1：在调用前设置环境变量，然后刷新
-config.update_from_env()
-
-# 方式 2：直接覆盖配置（优先级最高）
-config.apply_overrides(crawler_timeout_s=180, http_proxy="http://127.0.0.1:7890")
-```
-
-## 使用与参数传递（API 优先）
-
-默认推荐走 MediaWiki API（更稳定、无需视觉渲染），用法可直接参考：
-- `tests/test_biligame_crawler.py`
-- `tests/test_moegirl_crawler.py`
-
-Python API（站内搜索 → 拉取 API 内容 → 清洗成 Markdown）：
+### 1. 三站 wiki 搜索与抓取
 
 ```python
-from umamusume_web_crawler.web.moegirl import (
-    fetch_moegirl_wikitext_expanded,
-    search_moegirl_titles,
-)
 from umamusume_web_crawler.web.biligame import (
-    fetch_biligame_wikitext_expanded,
     search_biligame_titles,
+    fetch_biligame_wikitext_expanded,
 )
-from umamusume_web_crawler.web.biligame_assets import (
-    crawl_biligame_character_assets,
-    load_characters_from_json,
+from umamusume_web_crawler.web.moegirl import (
+    search_moegirl_titles,
+    fetch_moegirl_wikitext_expanded,
 )
 from umamusume_web_crawler.web.umamusu_wiki import (
-    download_umamusu_category_images,
-    fetch_umamusu_wikitext_expanded,
     search_umamusu_titles,
+    fetch_umamusu_wikitext_expanded,
 )
 from umamusume_web_crawler.web.parse_wiki_infobox import (
     parse_wiki_page,
     wiki_page_to_llm_markdown,
 )
 
-# 萌娘百科：搜索标题 → 拉取 extracts 纯文本 → Markdown
-titles = await search_moegirl_titles("东海帝王")
-target = titles[0] if titles else "东海帝王"
-moegirl_text = await fetch_moegirl_wikitext_expanded(
-    target, max_depth=1, max_pages=5
-)
-page = parse_wiki_page(moegirl_text, site="moegirl")
-md = wiki_page_to_llm_markdown(target, page, site="moegirl")
-
-# Bilibili Wiki：搜索标题 → 拉取 wikitext → 展开子页面 → Markdown
 titles = await search_biligame_titles("东海帝皇")
-target = titles[0] if titles else "东海帝皇"
-biligame_wikitext = await fetch_biligame_wikitext_expanded(
-    target, max_depth=1, max_pages=5
-)
-page = parse_wiki_page(biligame_wikitext, site="biligame")
-md = wiki_page_to_llm_markdown(target, page, site="biligame")
+target = titles[0]
+wikitext = await fetch_biligame_wikitext_expanded(target, max_depth=1, max_pages=5)
+page = parse_wiki_page(wikitext, site="biligame")
+markdown = wiki_page_to_llm_markdown(target, page, site="biligame")
+```
 
-# umamusu.wiki：搜索标题 / 抓页面 / 批量下载分类图片
-titles = await search_umamusu_titles("Agnes Tachyon")
-target = titles[0] if titles else "Agnes Tachyon"
-umamusu_wikitext = await fetch_umamusu_wikitext_expanded(
-    target, max_depth=1, max_pages=5
-)
-page = parse_wiki_page(umamusu_wikitext, site="umamusu")
-md = wiki_page_to_llm_markdown(target, page, site="umamusu")
+同理可替换为：
 
-downloads = await download_umamusu_category_images(
-    "Category:Game_Backgrounds",
-    output_dir="results/umamusu/backgrounds",
-    delay_s=0.5,
-    max_files=10,
+- `search_moegirl_titles` + `fetch_moegirl_wikitext_expanded`
+- `search_umamusu_titles` + `fetch_umamusu_wikitext_expanded`
+
+### 2. Biligame 角色音频/图片下载
+
+```python
+from umamusume_web_crawler.web.biligame_assets import (
+    crawl_biligame_character_assets,
+    load_characters_from_json,
 )
 
-# Bilibili Wiki：批量抓角色音频/立绘
 targets = {"特别周": "Special Week", "东海帝皇": "Tokai Teio"}
+
 summary = await crawl_biligame_character_assets(
     targets,
     audio_output_root="results/voicedata",
@@ -179,89 +155,174 @@ summary = await crawl_biligame_character_assets(
     request_delay=0.2,
     page_delay=0.5,
     concurrency=4,
-    skip_audio=False,
-    skip_images=False,
 )
 
-# 或从 json 角色映射读取
+# 或从 json 读取
 targets = load_characters_from_json("umamusume_characters.json")
 ```
 
-说明：
-- `workspace` / `output_dir` 是函数参数，不会自动从环境变量读取；如需用环境变量控制，请在调用方读取后传入。
-- `timeout_s` 可单次覆盖；默认值来自 `CRAWLER_TIMEOUT_S`。
-- `use_proxy` 为 `None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY` 配置。
-- `CRAWLER_USER_DATA_DIR` 会启用持久化浏览器 profile（复用 Cookie/会话）。
-- MediaWiki API 模块也支持 `use_proxy` 参数；萌娘百科直连即可访问时可不启用代理。
-- 萌娘百科当前默认使用 `action=query&prop=extracts&explaintext=1` 获取文本；`max_depth/max_pages` 参数会保留，但通常不会像 wikitext 那样扩展 transclusion。
+默认目录结构：
 
-如需走“视觉抓取”（Crawl4AI → PDF → MarkItDown），参考旧方案：
+- `results/voicedata/<English Name>/...`
+- `results/imagedata/characters/<English Name>/...`
+
+### 3. umamusu.wiki 分类图片下载
+
 ```python
-from pathlib import Path
-from umamusume_web_crawler.web.crawler import (
-    crawl_biligame_page_visual_markitdown,
-    crawl_biligame_page_visual,
-)
+from umamusume_web_crawler.web.umamusu_wiki import download_umamusu_category_images
 
-content = await crawl_biligame_page_visual_markitdown(
-    "https://wiki.biligame.com/umamusume/东海帝皇",
-    use_proxy=False,
-    workspace="data/cache",
-    keep_files=True,
-    timeout_s=180,
-)
-
-capture = await crawl_biligame_page_visual(
-    "https://wiki.biligame.com/umamusume/东海帝皇",
-    output_dir=Path("data/capture"),
-    capture_pdf=True,
-    pdf_from_png=False,
-    print_scale=None,
-    headless=False,
+downloads = await download_umamusu_category_images(
+    "Category:Game_Backgrounds",
+    output_dir="results/umamusu/backgrounds",
+    delay_s=0.5,
+    max_files=10,
 )
 ```
 
-CLI 参数：
-- `--task`（`page` / `biligame-assets`，默认 `page`）
-- `--mode`（auto/biligame/moegirl/umamusu/generic）
-- `--visual`（启用 PDF -> MarkItDown 视觉抓取）
-- `--visual-dir`（视觉抓取输出目录）
-- `--output`（输出 Markdown 路径，`-` 为 stdout）
+### 4. Google 搜索
+
+```python
+from umamusume_web_crawler.web.search import (
+    google_search_urls,
+    google_search_page_urls,
+)
+
+results = google_search_urls("爱慕织姬 site:wiki.biligame.com/umamusume", num=5)
+
+# Google API 不可用时，可退化为结果页解析
+fallback = google_search_page_urls(
+    "爱慕织姬 site:mzh.moegirl.org.cn",
+    num=5,
+    use_proxy=True,
+)
+```
+
+## 主 CLI
+
+主 CLI 命令：
+
+```bash
+umamusume-crawler ...
+# 或
+python main.py ...
+```
+
+### 1. 页面抓取
+
+默认任务是 `--task page`，用于三站 wiki 页面抓取。
+
+示例：
+
+```bash
+umamusume-crawler \
+  --url "https://wiki.biligame.com/umamusume/东海帝皇"
+
+umamusume-crawler \
+  --url "https://mzh.moegirl.org.cn/东海帝王" \
+  --mode moegirl
+
+umamusume-crawler \
+  --url "https://umamusu.wiki/List_of_Characters" \
+  --mode umamusu
+```
+
+输出：
+
+- 默认写入 `results/crawl.md`
+- 可通过 `--output -` 输出到 stdout
+
+相关参数：
+
+- `--url`
+- `--mode auto|biligame|moegirl|umamusu|generic`
+- `--output`
 - `--use-proxy` / `--no-proxy`
-- `--print-scale`（萌娘百科视觉抓取缩放）
-- `--headless`（视觉抓取 headless 模式）
-- `--capture-pdf` / `--no-capture-pdf`
-- `--audio-output` / `--image-output`（`biligame-assets` 模式的音频/图片输出目录）
-- `--skip-audio` / `--skip-images`（`biligame-assets` 模式可单独关闭）
-- `--character` + `--name`（指定要抓的角色；不传则读取 `--characters-json`）
-- `--request-delay` / `--page-delay` / `--concurrency`（资源下载频率控制）
-- `--asset-summary-output`（把资源抓取结果写入 JSON）
 
-MCP 工具参数（示例）：
+### 2. Biligame 角色资源下载
 
-```json
-{
-  "tool": "crawl_moegirl_wiki",
-  "args": {
-    "url": "https://mzh.moegirl.org.cn/东海帝王",
-    "max_depth": 1,
-    "max_pages": 5,
-    "use_proxy": true
-  }
-}
+`--task biligame-assets` 用于批量下载 Biligame 角色音频和图片。
+
+示例：
+
+```bash
+# 按默认 umamusume_characters.json 批量抓取
+umamusume-crawler \
+  --task biligame-assets
+
+# 单角色，只抓图片
+umamusume-crawler \
+  --task biligame-assets \
+  --character 特别周 \
+  --name "Special Week" \
+  --skip-audio
+
+# 自定义输出目录
+umamusume-crawler \
+  --task biligame-assets \
+  --audio-output data/voices \
+  --image-output data/images \
+  --asset-summary-output results/biligame_assets.json
 ```
 
-```json
-{
-  "tool": "crawl_biligame_wiki",
-  "args": {
-    "url": "https://wiki.biligame.com/umamusume/东海帝皇",
-    "max_depth": 1,
-    "max_pages": 5,
-    "use_proxy": false
-  }
-}
+默认输出目录：
+
+- `results/voicedata/<角色>/`
+- `results/imagedata/characters/<角色>/`
+
+相关参数：
+
+- `--audio-output`
+- `--image-output`
+- `--skip-audio`
+- `--skip-images`
+- `--character`
+- `--name`
+- `--characters-json`
+- `--dump-html`
+- `--request-delay`
+- `--page-delay`
+- `--concurrency`
+- `--asset-summary-output`
+
+### 主 CLI 不包含的能力
+
+当前主 CLI 没有独立子命令去做：
+
+- 三站 wiki 标题搜索
+- Google 搜索
+- `umamusu.wiki` 分类图片下载
+
+这些能力在 Python API、MCP 或 skill 中可用。
+
+## MCP
+
+启动：
+
+```bash
+umamusume-mcp --http -p 7777
+# 或
+python mcpserver.py --http -p 7777
 ```
+
+当前 MCP 工具：
+
+- `web_search_google(query)`
+- `crawl_google_page(query, num?, use_proxy?)`
+- `biligame_wiki_seaech(keyword, limit?, use_proxy?)`
+- `moegirl_wiki_search(keyword, limit?, use_proxy?)`
+- `umamusu_wiki_search(keyword, limit?, use_proxy?)`
+- `crawl_biligame_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `crawl_moegirl_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `crawl_umamusu_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `download_umamusu_category_images(category, output_dir?, max_files?, delay_s?, use_proxy?)`
+
+说明：
+
+- MCP 目前不暴露 Biligame 角色音频/图片下载。
+- MCP 目前不暴露视觉抓取。
+- `biligame_wiki_seaech` 保留了当前代码中的拼写，调用时需要按这个名字写。
+
+调用示例：
 
 ```json
 {
@@ -275,318 +336,128 @@ MCP 工具参数（示例）：
 }
 ```
 
-与测试脚本一致的 MCP 调用方式（可直接运行）：
-- `python tests/test_mcp_tool_crawler_biligame.py -u http://127.0.0.1:7777/mcp/`
-- `python tests/test_mcp_tool_crawler_moegirl.py -u http://127.0.0.1:7777/mcp/`
-## 运行结果
+## Skill
 
-```
-tests/test_biligame_crawler.py Search results for '东海帝皇': ['东海帝皇', '东海帝皇/ボクの武器', '东海帝皇/ボクのやり方', '东海帝皇/伝説のひと幕', '东海帝皇/ゴシップ狂想曲']
-Wrote 9994 chars to results/test/biligame_api.md
-TEST_RESULT: PASSED
-tests/test_moegirl_crawler.py Search results for '东海帝王': ['东海帝王']
-Wrote 58140 chars to results/test/moegirl_api.md
-TEST_RESULT: PASSED
+当前 skill：
+
+- [skills/umamusume-wiki-crawler/skill.md](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/skill.md:1)
+
+统一入口：
+
+```bash
+uv run python skills/umamusume-wiki-crawler/scripts/crawl.py <tool> [args]
 ```
 
-使用API可以返回。
+当前 skill 子命令：
 
-## 爬虫流程（现行）
-
-当前 MCP 默认走 MediaWiki API 抓取，再做结构化清洗输出 Markdown：
-
-1) 调用 Wiki API 拉取内容（Bwiki: wikitext；萌百: extracts 纯文本）。
-2) 解析 infobox/sections/transclusion 并转成 Markdown（可选 LLM 友好渲染）。
-3) MCP 工具 `crawl_biligame_wiki` / `crawl_moegirl_wiki` 返回 Markdown。
+- `biligame_wiki_search`
+- `moegirl_wiki_search`
+- `umamusu_wiki_search`
+- `crawl_biligame_wiki`
+- `crawl_moegirl_wiki`
+- `crawl_umamusu_wiki`
+- `download_umamusu_category_images`
 
 说明：
-- 视觉抓取方案仍保留，可通过 CLI `--visual` 或 Python API 调用。
-- Bwiki 可通过 `fetch_biligame_wikitext_expanded` 展开子页面，提升内容完整度。
-- 萌娘百科因上游 API 权限限制，当前主要返回 extracts 纯文本。
 
-## 探索经过（简述）
+- skill 没有 Google 搜索
+- skill 没有 Biligame 角色音频/图片下载
+- skill 主要面向“先搜索，再抓取，再回答”的 agent 工作流
 
-- 尝试过 HTML 清洗与结构化提取（去脚本、过滤噪声、分块等），但 Bwiki 页面噪声与动态结构导致效果不稳定。
-- 引入 Pruning 抽取后仍有缺失与重复问题。
-- 改为“截图成 PDF -> MarkItDown”后，PDF + MarkItDown 的正文提取更完整，作为当前主线路。
-
-## 运行
-
-1) 启动 Web MCP 服务
+示例：
 
 ```bash
-python mcpserver.py --http -p 7777
+uv run python skills/umamusume-wiki-crawler/scripts/crawl.py \
+  biligame_wiki_search "东海帝皇" --limit 5
+
+uv run python skills/umamusume-wiki-crawler/scripts/crawl.py \
+  crawl_umamusu_wiki "https://umamusu.wiki/List_of_Characters"
+
+uv run python skills/umamusume-wiki-crawler/scripts/crawl.py \
+  download_umamusu_category_images "Category:Game_Backgrounds" \
+  --output-dir results/umamusu/backgrounds
 ```
 
-2) 本地 CLI 抓取页面
+## 推荐主流程
+
+当前推荐使用顺序：
+
+1. 三站 wiki 内容查询：优先走 MediaWiki API 搜索 + 抓取
+2. Biligame 角色资源：走 `biligame-assets`
+3. `umamusu.wiki` 分类资源：走分类图片下载
+4. 只有在 API 路径不满足时，才考虑视觉抓取
+
+站点建议：
+
+- 游戏数值、技能、支援卡、育成事件：Biligame
+- 背景、梗、人物经历、历史原型：Moegirl
+- 英文社区整理页、总表、分类图库：umamusu.wiki
+
+## 历史方案 / 保留能力
+
+项目里仍然保留了一套视觉抓取链路：
+
+- `crawl_biligame_page_visual_markitdown`
+- `crawl_moegirl_page_visual_markitdown`
+- `crawl_page_visual_markitdown`
+- 以及对应的 PDF/PNG capture 函数
+
+这些函数仍可调用，也仍可通过主 CLI 的 `--visual` 触发，但它们现在更适合被看作：
+
+- 历史探索结果
+- 兼容保留能力
+- API 路径失效时的备用方案
+
+而不是当前推荐主流程。
+
+保留这部分的原因：
+
+- 过去曾用于解决 Bwiki / 萌百复杂页面排版还原问题
+- 某些特殊页面视觉抓取仍可能比 API 更完整
+- 相关测试与代码仍然存在，删除成本高于保留成本
+
+示例：
 
 ```bash
-python main.py --url "https://wiki.biligame.com/umamusume/东海帝皇" --mode biligame
-python main.py --url "https://mzh.moegirl.org.cn/东海帝王" --mode moegirl --visual
-```
-
-3) 本地 CLI 批量抓取 Bwiki 角色音频/图片
-
-```bash
-# 单角色：只抓图片
-python main.py --task biligame-assets \
-  --character 特别周 \
-  --name "Special Week" \
-  --skip-audio \
-  --image-output results/imagedata/characters \
-  --asset-summary-output results/biligame_assets.json
-
-# 使用默认 umamusume_characters.json 批量抓取音频+图片
-python main.py --task biligame-assets \
-  --audio-output results/voicedata \
-  --image-output results/imagedata/characters
-```
-
-### 方式 3：命令行参数（仅限 CLI）
-
-如果你使用 `umamusume-crawler` 命令行工具，可以直接传递参数：
-
-**注意**：CLI 现在默认使用 MediaWiki API 进行快速抓取（Bwiki / 萌娘百科）。如需使用浏览器视觉抓取（Crawl4AI + MarkItDown），请加上 `--visual` 参数。
-
-```bash
-# 默认：使用 API 抓取（推荐，速度快）
-umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇"
-
-# 可选：指定输出路径（默认 results/crawl.md）
-umamusume-crawler --url "..." --output "my_data/result.md"
-
-# 可选：输出到终端 (stdout)
-umamusume-crawler --url "..." --output -
-
-# 可选：使用浏览器视觉抓取（慢，但支持完整页面渲染）
-umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇" --visual
-
-# Bwiki 角色资源抓取：单角色只抓图片
-umamusume-crawler --task biligame-assets \
-  --character 特别周 \
-  --name "Special Week" \
-  --skip-audio \
-  --image-output results/imagedata/characters
-
-# Bwiki 角色资源抓取：按 umamusume_characters.json 批量抓音频+图片
-umamusume-crawler --task biligame-assets \
-  --audio-output results/voicedata \
-  --image-output results/imagedata/characters \
-  --asset-summary-output results/biligame_assets.json
-```
-
-`biligame-assets` 模式说明：
-- 默认读取 `umamusume_characters.json`，也可用 `--character`/`--name` 显式指定角色。
-- 输出目录默认分别为 `results/voicedata` 与 `results/imagedata/characters`。
-- 角色级目录会继续按英文名追加一层，例如 `results/voicedata/Special Week/`、`results/imagedata/characters/Special Week/`。
-- 可通过 `--audio-output` 和 `--image-output` 改成任意自定义根目录。
-- 该模式通过真实浏览器渲染 Bwiki 页面后提取音频节点与立绘图片，适合资源下载，不走 MediaWiki API Markdown 输出链路。
-
-## 集成指南（作为依赖库使用）
-
-如果通过 git 或 path 依赖将本包集成到你的项目中（例如使用 `uv`）：
-
-```toml
-[tool.uv.sources]
-umamusume-web-crawler = { git = "https://github.com/quantumxiaol/umamusume-web-crawler" }
-```
-
-**注意**：作为库引用时，它**不会**自动读取你的 `.env`。你需要手动传递配置。
-
-### 推荐做法：在项目入口处注入配置
-
-在你的主程序或初始化模块中（例如 `main.py` 或 `boot.py`）：
-
-```python
-from umamusume_web_crawler.config import config as crawler_config
-
-# 假设你从自己的配置系统（如 config.py 或 os.environ）获取了 Key
-MY_GOOGLE_API_KEY = "..."
-MY_GOOGLE_CSE_ID = "..."
-
-# 方式 1：手动传递值（最稳健）
-crawler_config.apply_overrides(
-    google_api_key=MY_GOOGLE_API_KEY,
-    google_cse_id=MY_GOOGLE_CSE_ID,
-    # 可选：如果需要代理
-    http_proxy="http://127.0.0.1:7890", 
-    https_proxy="http://127.0.0.1:7890",
-)
-
-# 方式 2：如果你已经加载了环境变量（例如使用了 python-dotenv）
-# crawler_config.update_from_env() 
-```
-
-## 在其他项目中使用 MCP 服务（API 优先）
-
-1) 安装依赖（在你的项目中）
-
-```bash
-pip install umamusume-web-crawler
-```
-
-安装后，你可以直接使用命令行工具启动服务：
-
-```bash
-# 自动加载当前目录下的 .env 文件
-umamusume-mcp --http -p 7777
-```
-
-2) 配置环境变量
-
-你可以创建一个 `.env` 文件，`umamusume-mcp` 和 `umamusume-crawler` 会自动加载它：
-
-```env
-GOOGLE_API_KEY=xxx
-GOOGLE_CSE_ID=xxx
-```
-
-或者在运行命令前设置环境变量：
-
-4) 在你的应用里调用 MCP 工具（示例）
-
-```json
-{
-  "tool": "crawl_moegirl_wiki",
-  "args": {
-    "url": "https://mzh.moegirl.org.cn/东海帝王",
-    "max_depth": 1,
-    "max_pages": 5,
-    "use_proxy": true
-  }
-}
-```
-
-可直接参考 MCP 调用测试：
-- `tests/test_mcp_tool_crawler_biligame.py`
-- `tests/test_mcp_tool_crawler_moegirl.py`
-
-可用工具与参数：
-- `web_search_google(query)`
-- `crawl_google_page(query, num?, use_proxy?)`
-- `biligame_wiki_seaech(keyword, limit?, use_proxy?)`
-- `moegirl_wiki_search(keyword, limit?, use_proxy?)`
-- `umamusu_wiki_search(keyword, limit?, use_proxy?)`
-- `crawl_biligame_wiki(url, max_depth?, max_pages?, use_proxy?)`
-- `crawl_moegirl_wiki(url, max_depth?, max_pages?, use_proxy?)`
-- `crawl_umamusu_wiki(url, max_depth?, max_pages?, use_proxy?)`
-- `download_umamusu_category_images(category, output_dir?, max_files?, delay_s?, use_proxy?)`
-
-说明：
-- MCP 工具默认使用 API 抓取，不生成中间 PDF/PNG。
-- `use_proxy=None` 时会自动跟随 `HTTP_PROXY/HTTPS_PROXY`。
-
-## 中间文件（PDF/PNG）存储
-
-视觉抓取默认使用临时目录并在解析完成后自动清理；如需保留中间产物，请显式传递存储位置。
-
-Python 调用示例：
-
-```python
-from pathlib import Path
-from umamusume_web_crawler.web.crawler import (
-    crawl_biligame_page_visual_markitdown,
-    crawl_biligame_page_visual,
-)
-
-# 1) 临时目录（默认），解析结束自动清理
-content = await crawl_biligame_page_visual_markitdown(
-    "https://wiki.biligame.com/umamusume/东海帝皇",
-)
-
-# 2) 持久化目录（保留 PDF/PNG）
-content = await crawl_biligame_page_visual_markitdown(
-    "https://wiki.biligame.com/umamusume/东海帝皇",
-    workspace="data/crawl_cache",
-    keep_files=True,
-)
-
-# 3) 只做抓取并保存文件（必须显式指定位置）
-capture = await crawl_biligame_page_visual(
-    "https://wiki.biligame.com/umamusume/东海帝皇",
-    output_dir=Path("data/crawl_capture"),
-)
-```
-
-CLI 用法：
-
-```bash
-python main.py --visual --visual-dir data/crawl_cache \
-  --url "https://wiki.biligame.com/umamusume/东海帝皇"
+umamusume-crawler \
+  --url "https://wiki.biligame.com/umamusume/东海帝皇" \
+  --visual
 ```
 
 ## 测试
 
-运行测试前请先启动 MCP 服务：
+部分相关测试：
+
+- `tests/test_biligame_assets.py`
+- `tests/test_biligame_crawler.py`
+- `tests/test_moegirl_crawler.py`
+- `tests/test_umamusu_wiki.py`
+- `tests/test_search_title.py`
+- `tests/test_mcp_tool_crawler_biligame.py`
+- `tests/test_mcp_tool_crawler_moegirl.py`
+- `tests/test_visual_capture_pdf.py`
+
+运行示例：
+
+```bash
+uv run pytest tests/test_biligame_assets.py
+uv run pytest tests/test_umamusu_wiki.py
+uv run pytest tests/test_cli_config.py
+```
+
+如需测试 MCP，先启动服务：
 
 ```bash
 python mcpserver.py --http -p 7777
 ```
 
-```bash
-python tests/test_google.py
-python tests/test_crawler.py
-python tests/test_biligame_crawler.py
-python tests/test_moegirl_crawler.py
-python tests/test_search_title.py
-python tests/test_mcp_tool_crawler.py -u http://127.0.0.1:7777/mcp/
-python tests/test_mcp_tool_crawler_biligame.py -u http://127.0.0.1:7777/mcp/
-python tests/test_mcp_tool_crawler_moegirl.py -u http://127.0.0.1:7777/mcp/
-python tests/test_mcp_tool_google.py -u http://127.0.0.1:7777/mcp/
-```
+## 备注
 
-使用 pytest 运行：
+当前 README 以“代码现状”为准，而不是以早期探索方向为准。
 
-```bash
-pytest -q
-```
+如果后续你把以下能力补进来，也应该同步更新矩阵：
 
-说明：Linux (尤其是 CI) 上可用 `xvfb-run` 包裹 `mcpserver.py` 或 `pytest`；
-macOS 本地通常无需 `xvfb-run`。
-
-提示：`pytest -q` 会捕获 stdout，只显示用例结果。
-若要查看爬取/ToolCall 的输出，使用 `pytest -s` 或直接运行脚本：
-
-```bash
-python tests/test_visual_capture_pdf.py
-python tests/test_mcp_tool_crawler.py -u http://127.0.0.1:7777/mcp/
-```
-
-## Agent Skills (实验性)
-
-本项目包含符合 Agent Skills 标准的 Skill 定义，可供支持该标准（如 Antigravity / Claude Code）的 AI Agent 直接调用。
-
-### `umamusume-wiki-crawler`
-
-位于 `skills/umamusume-wiki-crawler/`，提供**无头**快速抓取 Bilibili Wiki / 萌娘百科的能力。
-
-- **核心文件**: `skill.md` (定义), `scripts/crawl.py` (执行脚本)
-- **依赖**: 本项目环境 (`source .venv/bin/activate`)
-- **特点**: 
-  - 自动识别 URL (Bilibili/Moegirl)
-  - 使用 MediaWiki API (极快)
-  - 支持 `use_proxy` 无缝切换 (Moegirl 需代理时自动使用 .env 配置，也可强制直连)
-
-### 调试与集成
-
-**1. 手动调试**
-
-Skill 的本质是 Python 脚本。你可以直接在终端运行脚本来测试其功能：
-
-```bash
-# 确保依赖已安装
-uv sync
-source .venv/bin/activate
-
-# 测试抓取
-python skills/umamusume-wiki-crawler/scripts/crawl.py "https://wiki.biligame.com/umamusume/东海帝皇"
-```
-
-**2. 在 Agent 中使用 (Antigravity / Claude Code)**
-
-通常支持 Agent Skills 标准的工具会自动扫描其配置文件或项目根目录下的 `skills/` 目录。
-
-1.  **Clone 本仓库** 到你的工作区或 Agent 的项目目录中（或者将 `skills/` 文件夹复制到 Agent 指定的 skills 目录，如 `.antigravity/skills`）。
-2.  **安装依赖**：确保 Agent 运行环境中安装了本项目的依赖（如果不共享 venv，可能需要手动 `pip install umamusume-web-crawler` 或将依赖打包）。
-3.  **使用**：在与 Agent 对话时，直接以自然语言请求：“请帮我查一下Wiki上关于东海帝皇的资料”或“抓取萌娘百科关于赛马娘的页面”。Agent 会根据 `skill.md` 中的 `description` 自动匹配并调用该 Skill。
-```
+- 主 CLI 的 wiki 搜索入口
+- 主 CLI 的 `umamusu.wiki` 分类下载
+- MCP 的 Biligame 角色音频/图片下载
+- skill 的 Google 搜索或 Biligame 资源下载

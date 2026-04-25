@@ -9,6 +9,11 @@ from urllib.parse import parse_qs, quote, unquote, urlparse
 
 from dotenv import load_dotenv
 
+try:
+    from tqdm import tqdm
+except Exception:  # pragma: no cover - fallback when tqdm is unavailable
+    tqdm = None
+
 # Keep script runnable from repository root without installation.
 current_dir = Path(__file__).parent
 project_root = current_dir.parent.parent.parent
@@ -27,8 +32,10 @@ from umamusume_web_crawler.web.moegirl import (
 )
 from umamusume_web_crawler.web.umamusu_wiki import (
     DEFAULT_BASE_URL as _UMAMUSU_BASE_URL,
-    download_umamusu_category_images,
+    download_umamusu_file,
+    fetch_umamusu_image_info,
     fetch_umamusu_wikitext_expanded,
+    list_umamusu_category_files,
     search_umamusu_titles,
 )
 from umamusume_web_crawler.web.parse_wiki_infobox import (
@@ -66,6 +73,31 @@ def _resolve_proxy_arg(namespace: argparse.Namespace) -> bool | None:
 
 def _print_json(payload: dict) -> None:
     print(json.dumps(payload, ensure_ascii=False, indent=2))
+
+
+class _NoopProgress:
+    def __init__(self, total: int) -> None:
+        self.total = total
+        self.current = 0
+
+    def update(self, value: int = 1) -> None:
+        self.current += value
+        print(f"[progress] {self.current}/{self.total}")
+
+    def close(self) -> None:
+        return None
+
+    def set_postfix(self, **kwargs) -> None:
+        if not kwargs:
+            return
+        summary = " ".join(f"{key}={value}" for key, value in kwargs.items())
+        print(f"[progress] {summary}")
+
+
+def _make_progress(total: int, *, desc: str):
+    if tqdm is None:
+        return _NoopProgress(total)
+    return tqdm(total=total, desc=desc, unit="file")
 
 
 async def tool_biligame_wiki_search(
@@ -206,13 +238,55 @@ async def tool_download_umamusu_category_images(
     use_proxy: bool | None,
 ) -> dict:
     try:
-        downloads = await download_umamusu_category_images(
+        titles = await list_umamusu_category_files(
             category,
-            output_dir=output_dir,
             max_files=max_files,
             delay_s=delay_s,
             use_proxy=use_proxy,
         )
+        print(
+            f"[info] Found {len(titles)} files in {category}. "
+            f"Downloading to {output_dir}"
+        )
+        downloads = []
+        progress = _make_progress(len(titles), desc="umamusu images")
+        downloaded_count = 0
+        skipped_count = 0
+        try:
+            for index, title in enumerate(titles):
+                info = await fetch_umamusu_image_info(title, use_proxy=use_proxy)
+                raw_title = str(info["title"])
+                filename = raw_title.split(":", 1)[-1].replace("/", "_")
+                target_path = Path(output_dir) / filename
+                if target_path.exists():
+                    skipped_count += 1
+                    downloads.append(
+                        {
+                            **info,
+                            "filename": filename,
+                            "path": str(target_path),
+                            "bytes": target_path.stat().st_size,
+                            "skipped": True,
+                        }
+                    )
+                else:
+                    downloaded = await download_umamusu_file(
+                        title,
+                        output_dir=output_dir,
+                        use_proxy=use_proxy,
+                    )
+                    downloaded["skipped"] = False
+                    downloads.append(downloaded)
+                    downloaded_count += 1
+                progress.update(1)
+                progress.set_postfix(
+                    downloaded=downloaded_count,
+                    skipped=skipped_count,
+                )
+                if delay_s > 0 and index + 1 < len(titles):
+                    await asyncio.sleep(delay_s)
+        finally:
+            progress.close()
         return {
             "status": "success",
             "category": category,
