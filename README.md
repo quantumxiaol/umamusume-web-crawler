@@ -54,23 +54,23 @@
 
 核心文件：
 
-- [src/umamusume_web_crawler/cli.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/cli.py:1)
+- [src/umamusume_web_crawler/cli.py](src/umamusume_web_crawler/cli.py)
   主 CLI 入口。支持页面抓取和 `biligame-assets` 两类任务。
-- [src/umamusume_web_crawler/mcp/server.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/mcp/server.py:1)
+- [src/umamusume_web_crawler/mcp/server.py](src/umamusume_web_crawler/mcp/server.py)
   MCP 服务与工具定义。
-- [src/umamusume_web_crawler/web/biligame.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/biligame.py:1)
+- [src/umamusume_web_crawler/web/biligame.py](src/umamusume_web_crawler/web/biligame.py)
   Biligame MediaWiki API 访问。
-- [src/umamusume_web_crawler/web/moegirl.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/moegirl.py:1)
+- [src/umamusume_web_crawler/web/moegirl.py](src/umamusume_web_crawler/web/moegirl.py)
   Moegirl API 访问。
-- [src/umamusume_web_crawler/web/umamusu_wiki.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/umamusu_wiki.py:1)
+- [src/umamusume_web_crawler/web/umamusu_wiki.py](src/umamusume_web_crawler/web/umamusu_wiki.py)
   `umamusu.wiki` 搜索、抓取、分类图片下载。
-- [src/umamusume_web_crawler/web/biligame_assets.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/biligame_assets.py:1)
+- [src/umamusume_web_crawler/web/biligame_assets.py](src/umamusume_web_crawler/web/biligame_assets.py)
   Biligame 角色音频/图片批量下载。
-- [src/umamusume_web_crawler/web/search.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/src/umamusume_web_crawler/web/search.py:1)
+- [src/umamusume_web_crawler/web/search.py](src/umamusume_web_crawler/web/search.py)
   Google 搜索封装。
-- [skills/umamusume-wiki-crawler/skill.md](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/skill.md:1)
+- [skills/umamusume-wiki-crawler/skill.md](skills/umamusume-wiki-crawler/skill.md)
   skill 说明。
-- [skills/umamusume-wiki-crawler/scripts/crawl.py](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/scripts/crawl.py:1)
+- [skills/umamusume-wiki-crawler/scripts/crawl.py](skills/umamusume-wiki-crawler/scripts/crawl.py)
   skill 使用的 CLI 包装器。
 
 包装入口：
@@ -340,7 +340,7 @@ python mcpserver.py --http -p 7777
 
 当前 skill：
 
-- [skills/umamusume-wiki-crawler/skill.md](/Users/quantumxiaol/Desktop/dev/umamusume-web-crawler/skills/umamusume-wiki-crawler/skill.md:1)
+- [skills/umamusume-wiki-crawler/skill.md](skills/umamusume-wiki-crawler/skill.md)
 
 统一入口：
 
