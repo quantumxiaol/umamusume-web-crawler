@@ -1,127 +1,3121 @@
 {
-  "特别周": "Special Week",
-  "无声铃鹿": "Silence Suzuka",
-  "东海帝皇": "Tokai Teio",
-  "丸善斯基": "Maruzensky",
-  "富士奇迹": "Fuji Kiseki",
-  "小栗帽": "Oguri Cap",
-  "黄金船": "Gold Ship",
-  "伏特加": "Vodka",
-  "大和赤骥": "Daiwa Scarlet",
-  "大树快车": "Taiki Shuttle",
-  "草上飞": "Grass Wonder",
-  "菱亚马逊": "Hishi Amazon",
-  "目白麦昆": "Mejiro McQueen",
-  "神鹰": "El Condor Pasa",
-  "好歌剧": "T.M. Opera O",
-  "成田白仁": "Narita Brian",
-  "鲁道夫象征": "Symboli Rudolf",
-  "气槽": "Air Groove",
-  "爱丽数码": "Agnes Digital",
-  "青云天空": "Seiun Sky",
-  "玉藻十字": "Tamamo Cross",
-  "美妙姿势": "Fine Motion",
-  "琵琶晨光": "Biwa Hayahide",
-  "摩耶重炮": "Mayano Top Gun",
-  "曼城茶座": "Manhattan Cafe",
-  "美浦波旁": "Mihono Bourbon",
-  "目白赖恩": "Mejiro Ryan",
-  "菱曙": "Hishi Akebono",
-  "雪之美人": "Yukino Bijin",
-  "米浴": "Rice Shower",
-  "艾尼斯风神": "Ines Fujin",
-  "爱丽速子": "Agnes Tachyon",
-  "爱慕织姬": "Admire Vega",
-  "稻荷一": "Inari One",
-  "胜利奖券": "Winning Ticket",
-  "空中神宫": "Air Shakur",
-  "荣进闪耀": "Eishin Flash",
-  "真机伶": "Curren Chan",
-  "川上公主": "Kawakami Princess",
-  "黄金城": "Gold City",
-  "樱花进王": "Sakura Bakushin O",
-  "采珠": "Seeking the Pearl",
-  "新光风": "Shinko Windy",
-  "东商变革": "Sweep Tosho",
-  "超级溪流": "Super Creek",
-  "醒目飞鹰": "Smart Falcon",
-  "荒漠英雄": "Zenno Rob Roy",
-  "东瀛佐敦": "Tosen Jordan",
-  "中山庆典": "Nakayama Festa",
-  "成田大进": "Narita Taishin",
-  "西野花": "Nishino Flower",
-  "春乌拉拉": "Haru Urara",
-  "青竹回忆": "Bamboo Memory",
-  "微光飞驹": "Biko Pegasus",
-  "美丽周日": "Marvelous Sunday",
-  "待兼福来": "Matikane fukukitaru",
-  "千明代表": "Mr. C.B.",
-  "名将怒涛": "Meisho Doto",
-  "目白多伯": "Mejiro Dober",
-  "优秀素质": "Nice Nature",
-  "圣王光环": "King Halo",
-  "待兼诗歌剧": "Matikane tannhauser",
-  "生野狄杜斯": "Ikuno Dictus",
-  "目白善信": "Mejiro Palmer",
-  "大拓太阳神": "Daitaku Helios",
-  "双涡轮": "Twin Turbo",
-  "里见光钻": "Satono Diamond",
-  "北部玄驹": "Kitasan Black",
-  "樱花千代王": "Sakura Chiyono O",
-  "天狼星象征": "Sirius Symboli",
-  "目白阿尔丹": "Mejiro Ardan",
-  "八重无敌": "Yaeno Muteki",
-  "鹤丸刚志": "Tsurumaru Tsuyoshi",
-  "目白光明": "Mejiro Bright",
-  "谋勇兼备": "Daring Tact",
-  "樱花桂冠": "Sakura Laurel",
-  "成田路": "Narita Top Road",
-  "也文摄辉": "Yamanin Zephyr",
-  "狂怒乐章": "Furioso",
-  "创升": "Transcend",
-  "希望之城": "Espoir City",
-  "北方飞翔": "North Flight",
-  "吉兆": "Symboli Kris S",
-  "谷野美酒": "Tanino Gimlet",
-  "第一红宝石": "Daiichi Ruby",
-  "目白高峰": "Mejiro Ramonu",
-  "真弓快车": "Aston Machan",
-  "里见皇冠": "Satono Crown",
-  "高尚骏逸": "Cheval Grand",
-  "极峰": "Verxina",
-  "强击": "Vivlos",
-  "烈焰快驹": "Dantsu Flame",
-  "凯斯奇迹": "K.S.Miracle",
-  "森林宝穴": "Jungle Pocket",
-  "信念": "Believe",
-  "莫名其妙": "No Reason",
-  "爱如往昔": "Still in Love",
-  "小林历奇": "Copano Rickey",
-  "北港火山": "Hokko Tarumae",
-  "奇锐骏": "Wonder Acute",
-  "大森逊": "Samson Big",
-  "万籁争鸣": "Sounds of Earth",
-  "罗伊斯兄弟": "Royce and Royce",
-  "葛城王牌": "Katsuragi Ace",
-  "新宇宙": "Neo Universe",
-  "菱钻奇宝": "Hishi Miracle",
-  "跳舞城": "Tap Dance City",
-  "大鸣大放": "Duramente",
-  "莱茵力量": "Rhein Kraft",
-  "西沙里奥": "Cesario",
-  "空中救世主": "Air Messiah",
-  "房一潘多拉": "Fusaichi Pandora",
-  "勇敢之心": "Daring Heart",
-  "迷人景致": "Buena Vista",
-  "黄金巨匠": "Orfevre",
-  "贵妇人": "Gentildonna",
-  "凯旋芭蕾": "Win Variation",
-  "梦之旅": "Dream Journey",
-  "金镇之光": "Calstone Light O",
-  "多旺达": "Durandal",
-  "吹波糖": "Bubble Gum Fellow",
-  "超常骏骥": "Fenomeno",
-  "放声欢呼": "Gran Alegria",
-  "唯独爱你": "Loves Only You",
-  "创世驹": "Chrono Genesis"
+  "schema_version": 2,
+  "updated_at": "2026-07-15T09:16:04.360857+00:00",
+  "sources": {
+    "biligame": "https://wiki.biligame.com/umamusume/%E8%B5%9B%E9%A9%AC%E5%A8%98%E4%B8%80%E8%A7%88",
+    "official": "https://umamusume.jp/character/"
+  },
+  "counts": {
+    "characters": 142,
+    "implemented": 131,
+    "variants": 259,
+    "unresolved": 0
+  },
+  "characters": [
+    {
+      "id": "1001",
+      "name_cn": "特别周",
+      "name_en": "Special Week",
+      "name_ja": "スペシャルウィーク",
+      "official_slug": "specialweek",
+      "implemented": true,
+      "wiki_title": "特别周",
+      "variants": [
+        {
+          "costume_id": "100101",
+          "wiki_title": "特别周",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100102",
+          "wiki_title": "【ほっぴん♪ビタミンハート】特别周",
+          "label": "【ほっぴん♪ビタミンハート】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100103",
+          "wiki_title": "【日之本一の総大将】特别周",
+          "label": "【日之本一の総大将】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1002",
+      "name_cn": "无声铃鹿",
+      "name_en": "Silence Suzuka",
+      "name_ja": "サイレンススズカ",
+      "official_slug": "silencesuzuka",
+      "implemented": true,
+      "wiki_title": "无声铃鹿",
+      "variants": [
+        {
+          "costume_id": "100201",
+          "wiki_title": "无声铃鹿",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100202",
+          "wiki_title": "【波間のエメラルド】无声铃鹿",
+          "label": "【波間のエメラルド】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1003",
+      "name_cn": "东海帝皇",
+      "name_en": "Tokai Teio",
+      "name_ja": "トウカイテイオー",
+      "official_slug": "tokaiteio",
+      "implemented": true,
+      "wiki_title": "东海帝皇",
+      "variants": [
+        {
+          "costume_id": "100301",
+          "wiki_title": "东海帝皇",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100302",
+          "wiki_title": "【ビヨンド・ザ・ホライズン】东海帝皇",
+          "label": "【ビヨンド・ザ・ホライズン】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100303",
+          "wiki_title": "【紫雲の夢見取り】东海帝皇",
+          "label": "【紫雲の夢見取り】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1004",
+      "name_cn": "丸善斯基",
+      "name_en": "Maruzensky",
+      "name_ja": "マルゼンスキー",
+      "official_slug": "maruzensky",
+      "implemented": true,
+      "wiki_title": "丸善斯基",
+      "variants": [
+        {
+          "costume_id": "100401",
+          "wiki_title": "丸善斯基",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100402",
+          "wiki_title": "【ぶっとび☆さまーナイト】丸善斯基",
+          "label": "【ぶっとび☆さまーナイト】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100403",
+          "wiki_title": "【祝ひ寿ぐ神速天女】丸善斯基",
+          "label": "【祝ひ寿ぐ神速天女】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1005",
+      "name_cn": "富士奇迹",
+      "name_en": "Fuji Kiseki",
+      "name_ja": "フジキセキ",
+      "official_slug": "fujikiseki",
+      "implemented": true,
+      "wiki_title": "富士奇迹",
+      "variants": [
+        {
+          "costume_id": "100501",
+          "wiki_title": "富士奇迹",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100502",
+          "wiki_title": "【シュクセ・エトワーレ】富士奇迹",
+          "label": "【シュクセ・エトワーレ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100503",
+          "wiki_title": "【ブランシュ・エトワール】フジキセキ",
+          "label": "【ブランシュ・エトワール】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1006",
+      "name_cn": "小栗帽",
+      "name_en": "Oguri Cap",
+      "name_ja": "オグリキャップ",
+      "official_slug": "oguricap",
+      "implemented": true,
+      "wiki_title": "小栗帽",
+      "variants": [
+        {
+          "costume_id": "100601",
+          "wiki_title": "小栗帽",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "100602",
+          "wiki_title": "【キセキの白星】小栗帽",
+          "label": "【キセキの白星】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100603",
+          "wiki_title": "【シンデレラグレイ】オグリキャップ",
+          "label": "【シンデレラグレイ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1007",
+      "name_cn": "黄金船",
+      "name_en": "Gold Ship",
+      "name_ja": "ゴールドシップ",
+      "official_slug": "goldship",
+      "implemented": true,
+      "wiki_title": "黄金船",
+      "variants": [
+        {
+          "costume_id": "100702",
+          "wiki_title": "【RUN！乱！ランチャー！！】黄金船",
+          "label": "【RUN！乱！ランチャー！！】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100703",
+          "wiki_title": "【La mode 564】黄金船",
+          "label": "【La mode 564】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100701",
+          "wiki_title": "黄金船",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1008",
+      "name_cn": "伏特加",
+      "name_en": "Vodka",
+      "name_ja": "ウオッカ",
+      "official_slug": "vodka",
+      "implemented": true,
+      "wiki_title": "伏特加",
+      "variants": [
+        {
+          "costume_id": "100802",
+          "wiki_title": "【不凍のアクア・ウィタエ】伏特加",
+          "label": "【不凍のアクア・ウィタエ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100801",
+          "wiki_title": "伏特加",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1009",
+      "name_cn": "大和赤骥",
+      "name_en": "Daiwa Scarlet",
+      "name_ja": "ダイワスカーレット",
+      "official_slug": "daiwascarlet",
+      "implemented": true,
+      "wiki_title": "大和赤骥",
+      "variants": [
+        {
+          "costume_id": "100902",
+          "wiki_title": "【緋色のニュイ・エトワレ】大和赤骥",
+          "label": "【緋色のニュイ・エトワレ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "100901",
+          "wiki_title": "大和赤骥",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1010",
+      "name_cn": "大树快车",
+      "name_en": "Taiki Shuttle",
+      "name_ja": "タイキシャトル",
+      "official_slug": "taikishuttle",
+      "implemented": true,
+      "wiki_title": "大树快车",
+      "variants": [
+        {
+          "costume_id": "101001",
+          "wiki_title": "大树快车",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101002",
+          "wiki_title": "【Bubblegum ☆ Memories】大树快车",
+          "label": "【Bubblegum ☆ Memories】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101003",
+          "wiki_title": "【Baa Baa Patisserie】タイキシャトル",
+          "label": "【Baa Baa Patisserie】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1011",
+      "name_cn": "草上飞",
+      "name_en": "Grass Wonder",
+      "name_ja": "グラスワンダー",
+      "official_slug": "grasswonder",
+      "implemented": true,
+      "wiki_title": "草上飞",
+      "variants": [
+        {
+          "costume_id": "101102",
+          "wiki_title": "【セイントジェード・ヒーラー】草上飞",
+          "label": "【セイントジェード・ヒーラー】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101103",
+          "wiki_title": "【蒼炎の誉】草上飞",
+          "label": "【蒼炎の誉】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101101",
+          "wiki_title": "草上飞",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1012",
+      "name_cn": "菱亚马逊",
+      "name_en": "Hishi Amazon",
+      "name_ja": "ヒシアマゾン",
+      "official_slug": "hishiamazon",
+      "implemented": true,
+      "wiki_title": "菱亚马逊",
+      "variants": [
+        {
+          "costume_id": "101201",
+          "wiki_title": "菱亚马逊",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101202",
+          "wiki_title": "【Hungry Veil】菱亚马逊",
+          "label": "【Hungry Veil】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1013",
+      "name_cn": "目白麦昆",
+      "name_en": "Mejiro McQueen",
+      "name_ja": "メジロマックイーン",
+      "official_slug": "mejiromcqueen",
+      "implemented": true,
+      "wiki_title": "目白麦昆",
+      "variants": [
+        {
+          "costume_id": "101301",
+          "wiki_title": "目白麦昆",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101302",
+          "wiki_title": "【エンド・オブ・スカイ】目白麦昆",
+          "label": "【エンド・オブ・スカイ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101303",
+          "wiki_title": "【さざ波フェアレディ】目白麦昆",
+          "label": "【さざ波フェアレディ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1014",
+      "name_cn": "神鹰",
+      "name_en": "El Condor Pasa",
+      "name_ja": "エルコンドルパサー",
+      "official_slug": "elcondorpasa",
+      "implemented": true,
+      "wiki_title": "神鹰",
+      "variants": [
+        {
+          "costume_id": "101402",
+          "wiki_title": "【ククルカン・モンク】神鹰",
+          "label": "【ククルカン・モンク】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101401",
+          "wiki_title": "神鹰",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1015",
+      "name_cn": "好歌剧",
+      "name_en": "T.M. Opera O",
+      "name_ja": "テイエムオペラオー",
+      "official_slug": "tmoperao",
+      "implemented": true,
+      "wiki_title": "好歌剧",
+      "variants": [
+        {
+          "costume_id": "101501",
+          "wiki_title": "好歌剧",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101502",
+          "wiki_title": "【初晴・青き絢爛】好歌剧",
+          "label": "【初晴・青き絢爛】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1016",
+      "name_cn": "成田白仁",
+      "name_en": "Narita Brian",
+      "name_ja": "ナリタブライアン",
+      "official_slug": "naritabrian",
+      "implemented": true,
+      "wiki_title": "成田白仁",
+      "variants": [
+        {
+          "costume_id": "101601",
+          "wiki_title": "成田白仁",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101602",
+          "wiki_title": "【餓狼】成田白仁",
+          "label": "【餓狼】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1017",
+      "name_cn": "鲁道夫象征",
+      "name_en": "Symboli Rudolf",
+      "name_ja": "シンボリルドルフ",
+      "official_slug": "symbolirudolf",
+      "implemented": true,
+      "wiki_title": "鲁道夫象征",
+      "variants": [
+        {
+          "costume_id": "101701",
+          "wiki_title": "鲁道夫象征",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101702",
+          "wiki_title": "【皓月の弓取り】鲁道夫象征",
+          "label": "【皓月の弓取り】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1018",
+      "name_cn": "气槽",
+      "name_en": "Air Groove",
+      "name_ja": "エアグルーヴ",
+      "official_slug": "airgroove",
+      "implemented": true,
+      "wiki_title": "气槽",
+      "variants": [
+        {
+          "costume_id": "101802",
+          "wiki_title": "【クエルクス·キウイ一リス】气槽",
+          "label": "【クエルクス·キウイ一リス】",
+          "is_base": false
+        },
+        {
+          "costume_id": "101801",
+          "wiki_title": "气槽",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1019",
+      "name_cn": "爱丽数码",
+      "name_en": "Agnes Digital",
+      "name_ja": "アグネスデジタル",
+      "official_slug": "agnesdigital",
+      "implemented": true,
+      "wiki_title": "爱丽数码",
+      "variants": [
+        {
+          "costume_id": "101901",
+          "wiki_title": "爱丽数码",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "101902",
+          "wiki_title": "【愛麗♡キョンシー】爱丽数码",
+          "label": "【愛麗♡キョンシー】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1020",
+      "name_cn": "青云天空",
+      "name_en": "Seiun Sky",
+      "name_ja": "セイウンスカイ",
+      "official_slug": "seiunsky",
+      "implemented": true,
+      "wiki_title": "青云天空",
+      "variants": [
+        {
+          "costume_id": "102001",
+          "wiki_title": "青云天空",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102002",
+          "wiki_title": "【ソワレ・ド・シャトン】青云天空",
+          "label": "【ソワレ・ド・シャトン】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1021",
+      "name_cn": "玉藻十字",
+      "name_en": "Tamamo Cross",
+      "name_ja": "タマモクロス",
+      "official_slug": "tamamocross",
+      "implemented": true,
+      "wiki_title": "玉藻十字",
+      "variants": [
+        {
+          "costume_id": "102101",
+          "wiki_title": "玉藻十字",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102102",
+          "wiki_title": "【猛ル鳴神】玉藻十字",
+          "label": "【猛ル鳴神】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1022",
+      "name_cn": "美妙姿势",
+      "name_en": "Fine Motion",
+      "name_ja": "ファインモーション",
+      "official_slug": "finemotion",
+      "implemented": true,
+      "wiki_title": "美妙姿势",
+      "variants": [
+        {
+          "costume_id": "102201",
+          "wiki_title": "美妙姿势",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102202",
+          "wiki_title": "【Titania】美妙姿势",
+          "label": "【Titania】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102203",
+          "wiki_title": "【麺華煌彩伝・極】ファインモーション",
+          "label": "【麺華煌彩伝・極】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1023",
+      "name_cn": "琵琶晨光",
+      "name_en": "Biwa Hayahide",
+      "name_ja": "ビワハヤヒデ",
+      "official_slug": "biwahayahide",
+      "implemented": true,
+      "wiki_title": "琵琶晨光",
+      "variants": [
+        {
+          "costume_id": "102301",
+          "wiki_title": "琵琶晨光",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102302",
+          "wiki_title": "【ノエルージュ・キャロル】琵琶晨光",
+          "label": "【ノエルージュ・キャロル】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102303",
+          "wiki_title": "【Engineered Victory】琵琶晨光",
+          "label": "【Engineered Victory】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1024",
+      "name_cn": "摩耶重炮",
+      "name_en": "Mayano Top Gun",
+      "name_ja": "マヤノトップガン",
+      "official_slug": "mayanotopgun",
+      "implemented": true,
+      "wiki_title": "摩耶重炮",
+      "variants": [
+        {
+          "costume_id": "102402",
+          "wiki_title": "【サンライト·ブ一ケ】摩耶重炮",
+          "label": "【サンライト·ブ一ケ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102403",
+          "wiki_title": "【ろっきん☆MewMeow】摩耶重炮",
+          "label": "【ろっきん☆MewMeow】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102401",
+          "wiki_title": "摩耶重炮",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1025",
+      "name_cn": "曼城茶座",
+      "name_en": "Manhattan Cafe",
+      "name_ja": "マンハッタンカフェ",
+      "official_slug": "manhattancafe",
+      "implemented": true,
+      "wiki_title": "曼城茶座",
+      "variants": [
+        {
+          "costume_id": "102501",
+          "wiki_title": "曼城茶座",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102502",
+          "wiki_title": "【柳緑小夜】曼城茶座",
+          "label": "【柳緑小夜】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102503",
+          "wiki_title": "【幽玄薔薇】マンハッタンカフェ",
+          "label": "【幽玄薔薇】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1026",
+      "name_cn": "美浦波旁",
+      "name_en": "Mihono Bourbon",
+      "name_ja": "ミホノブルボン",
+      "official_slug": "mihonobourbon",
+      "implemented": true,
+      "wiki_title": "美浦波旁",
+      "variants": [
+        {
+          "costume_id": "102601",
+          "wiki_title": "美浦波旁",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102602",
+          "wiki_title": "【CODE：グラサージュ】美浦波旁",
+          "label": "【CODE：グラサージュ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1027",
+      "name_cn": "目白赖恩",
+      "name_en": "Mejiro Ryan",
+      "name_ja": "メジロライアン",
+      "official_slug": "mejiroryan",
+      "implemented": true,
+      "wiki_title": "目白赖恩",
+      "variants": [
+        {
+          "costume_id": "102702",
+          "wiki_title": "【マーガレット・ラッテ】目白赖恩",
+          "label": "【マーガレット・ラッテ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "102701",
+          "wiki_title": "目白赖恩",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1028",
+      "name_cn": "菱曙",
+      "name_en": "Hishi Akebono",
+      "name_ja": "ヒシアケボノ",
+      "official_slug": "hishiakebono",
+      "implemented": true,
+      "wiki_title": "菱曙",
+      "variants": [
+        {
+          "costume_id": "102801",
+          "wiki_title": "菱曙",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102802",
+          "wiki_title": "【マジックナイトガーランド】菱曙",
+          "label": "【マジックナイトガーランド】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1029",
+      "name_cn": "雪之美人",
+      "name_en": "Yukino Bijin",
+      "name_ja": "ユキノビジン",
+      "official_slug": "yukinobijin",
+      "implemented": true,
+      "wiki_title": "雪之美人",
+      "variants": [
+        {
+          "costume_id": "102901",
+          "wiki_title": "雪之美人",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "102902",
+          "wiki_title": "【茶の子雪ん子】雪之美人",
+          "label": "【茶の子雪ん子】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1030",
+      "name_cn": "米浴",
+      "name_en": "Rice Shower",
+      "name_ja": "ライスシャワー",
+      "official_slug": "riceshower",
+      "implemented": true,
+      "wiki_title": "米浴",
+      "variants": [
+        {
+          "costume_id": "103001",
+          "wiki_title": "米浴",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103002",
+          "wiki_title": "【Make up Vampire!】米浴",
+          "label": "【Make up Vampire!】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103003",
+          "wiki_title": "【Yummy Dreamy Fairy】米浴",
+          "label": "【Yummy Dreamy Fairy】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1031",
+      "name_cn": "艾尼斯风神",
+      "name_en": "Ines Fujin",
+      "name_ja": "アイネスフウジン",
+      "official_slug": "inesfujin",
+      "implemented": true,
+      "wiki_title": "艾尼斯风神",
+      "variants": [
+        {
+          "costume_id": "103101",
+          "wiki_title": "艾尼斯风神",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103102",
+          "wiki_title": "【MELTY GIFT】艾尼斯风神",
+          "label": "【MELTY GIFT】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103103",
+          "wiki_title": "【Hello Hello Island】アイネスフウジン",
+          "label": "【Hello Hello Island】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1032",
+      "name_cn": "爱丽速子",
+      "name_en": "Agnes Tachyon",
+      "name_ja": "アグネスタキオン",
+      "official_slug": "agnestachyon",
+      "implemented": true,
+      "wiki_title": "爱丽速子",
+      "variants": [
+        {
+          "costume_id": "103202",
+          "wiki_title": "【Lunatic Lab】爱丽速子",
+          "label": "【Lunatic Lab】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103203",
+          "wiki_title": "【Σ Experiment】爱丽速子",
+          "label": "【Σ Experiment】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103201",
+          "wiki_title": "爱丽速子",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1033",
+      "name_cn": "爱慕织姬",
+      "name_en": "Admire Vega",
+      "name_ja": "アドマイヤベガ",
+      "official_slug": "admirevega",
+      "implemented": true,
+      "wiki_title": "爱慕织姬",
+      "variants": [
+        {
+          "costume_id": "103301",
+          "wiki_title": "爱慕织姬",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103302",
+          "wiki_title": "【Glacialis Vega】爱慕织姬",
+          "label": "【Glacialis Vega】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1034",
+      "name_cn": "稻荷一",
+      "name_en": "Inari One",
+      "name_ja": "イナリワン",
+      "official_slug": "inarione",
+      "implemented": true,
+      "wiki_title": "稻荷一",
+      "variants": [
+        {
+          "costume_id": "103401",
+          "wiki_title": "稻荷一",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103402",
+          "wiki_title": "【夢ノ金原】稻荷一",
+          "label": "【夢ノ金原】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1035",
+      "name_cn": "胜利奖券",
+      "name_en": "Winning Ticket",
+      "name_ja": "ウイニングチケット",
+      "official_slug": "winningticket",
+      "implemented": true,
+      "wiki_title": "胜利奖券",
+      "variants": [
+        {
+          "costume_id": "103502",
+          "wiki_title": "【Dream Deliverer】胜利奖券",
+          "label": "【Dream Deliverer】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103503",
+          "wiki_title": "【Glorious Coat】胜利奖券",
+          "label": "【Glorious Coat】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103501",
+          "wiki_title": "胜利奖券",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1036",
+      "name_cn": "空中神宫",
+      "name_en": "Air Shakur",
+      "name_ja": "エアシャカール",
+      "official_slug": "airshakur",
+      "implemented": true,
+      "wiki_title": "空中神宫",
+      "variants": [
+        {
+          "costume_id": "103601",
+          "wiki_title": "空中神宫",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103602",
+          "wiki_title": "【Belphegor's Prime】エアシャカール",
+          "label": "【Belphegor's Prime】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1037",
+      "name_cn": "荣进闪耀",
+      "name_en": "Eishin Flash",
+      "name_ja": "エイシンフラッシュ",
+      "official_slug": "eishinflash",
+      "implemented": true,
+      "wiki_title": "荣进闪耀",
+      "variants": [
+        {
+          "costume_id": "103701",
+          "wiki_title": "荣进闪耀",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103702",
+          "wiki_title": "【コレクト・ショコラティエ】荣进闪耀",
+          "label": "【コレクト・ショコラティエ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "103703",
+          "wiki_title": "【Reines Plätschern】荣进闪耀",
+          "label": "【Reines Plätschern】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1038",
+      "name_cn": "真机伶",
+      "name_en": "Curren Chan",
+      "name_ja": "カレンチャン",
+      "official_slug": "currenchan",
+      "implemented": true,
+      "wiki_title": "真机伶",
+      "variants": [
+        {
+          "costume_id": "103801",
+          "wiki_title": "真机伶",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103802",
+          "wiki_title": "【朔月のマ・シェリ】真机伶",
+          "label": "【朔月のマ・シェリ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1039",
+      "name_cn": "川上公主",
+      "name_en": "Kawakami Princess",
+      "name_ja": "カワカミプリンセス",
+      "official_slug": "kawakamiprincess",
+      "implemented": true,
+      "wiki_title": "川上公主",
+      "variants": [
+        {
+          "costume_id": "103901",
+          "wiki_title": "川上公主",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "103902",
+          "wiki_title": "【水干撫子】川上公主",
+          "label": "【水干撫子】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1040",
+      "name_cn": "黄金城",
+      "name_en": "Gold City",
+      "name_ja": "ゴールドシチー",
+      "official_slug": "goldcity",
+      "implemented": true,
+      "wiki_title": "黄金城",
+      "variants": [
+        {
+          "costume_id": "104001",
+          "wiki_title": "黄金城",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104002",
+          "wiki_title": "【秋桜ダンツァトリーチェ】黄金城",
+          "label": "【秋桜ダンツァトリーチェ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104003",
+          "wiki_title": "【Boho Flare】黄金城",
+          "label": "【Boho Flare】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1041",
+      "name_cn": "樱花进王",
+      "name_en": "Sakura Bakushin O",
+      "name_ja": "サクラバクシンオー",
+      "official_slug": "sakurabakushino",
+      "implemented": true,
+      "wiki_title": "樱花进王",
+      "variants": [
+        {
+          "costume_id": "104102",
+          "wiki_title": "【レッドホット☆リーダー】樱花进王",
+          "label": "【レッドホット☆リーダー】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104103",
+          "wiki_title": "【春雷の韋駄天】サクラバクシンオー",
+          "label": "【春雷の韋駄天】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104101",
+          "wiki_title": "樱花进王",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1042",
+      "name_cn": "采珠",
+      "name_en": "Seeking the Pearl",
+      "name_ja": "シーキングザパール",
+      "official_slug": "seekingthepearl",
+      "implemented": true,
+      "wiki_title": "采珠",
+      "variants": [
+        {
+          "costume_id": "104201",
+          "wiki_title": "采珠",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104202",
+          "wiki_title": "【Be♪Witched】采珠",
+          "label": "【Be♪Witched】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1043",
+      "name_cn": "新光风",
+      "name_en": "Shinko Windy",
+      "name_ja": "シンコウウインディ",
+      "official_slug": "shinkowindy",
+      "implemented": true,
+      "wiki_title": "新光风",
+      "variants": [
+        {
+          "costume_id": "104301",
+          "wiki_title": "新光风",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1044",
+      "name_cn": "东商变革",
+      "name_en": "Sweep Tosho",
+      "name_ja": "スイープトウショウ",
+      "official_slug": "sweeptosho",
+      "implemented": true,
+      "wiki_title": "东商变革",
+      "variants": [
+        {
+          "costume_id": "104401",
+          "wiki_title": "东商变革",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104402",
+          "wiki_title": "【リアライズ・ルーン】东商变革",
+          "label": "【リアライズ・ルーン】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1045",
+      "name_cn": "超级小海湾",
+      "name_en": "Super Creek",
+      "name_ja": "スーパークリーク",
+      "official_slug": "supercreek",
+      "implemented": true,
+      "wiki_title": "超级小海湾",
+      "variants": [
+        {
+          "costume_id": "104502",
+          "wiki_title": "【シフォンリボンマミー】超级小海湾",
+          "label": "【シフォンリボンマミー】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104503",
+          "wiki_title": "【慈雨華影】超级小海湾",
+          "label": "【慈雨華影】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104501",
+          "wiki_title": "超级小海湾",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1046",
+      "name_cn": "醒目飞鹰",
+      "name_en": "Smart Falcon",
+      "name_ja": "スマートファルコン",
+      "official_slug": "smartfalcon",
+      "implemented": true,
+      "wiki_title": "醒目飞鹰",
+      "variants": [
+        {
+          "costume_id": "104601",
+          "wiki_title": "醒目飞鹰",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104602",
+          "wiki_title": "【黄昏トライアンフ】醒目飞鹰",
+          "label": "【黄昏トライアンフ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104603",
+          "wiki_title": "【ルミナス☆トワラー】醒目飞鹰",
+          "label": "【ルミナス☆トワラー】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1047",
+      "name_cn": "荒漠英雄",
+      "name_en": "Zenno Rob Roy",
+      "name_ja": "ゼンノロブロイ",
+      "official_slug": "zennorobroy",
+      "implemented": true,
+      "wiki_title": "荒漠英雄",
+      "variants": [
+        {
+          "costume_id": "104701",
+          "wiki_title": "荒漠英雄",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104702",
+          "wiki_title": "【Inlaid Stories】荒漠英雄",
+          "label": "【Inlaid Stories】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1048",
+      "name_cn": "东瀛佐敦",
+      "name_en": "Tosen Jordan",
+      "name_ja": "トーセンジョーダン",
+      "official_slug": "tosenjordan",
+      "implemented": true,
+      "wiki_title": "东瀛佐敦",
+      "variants": [
+        {
+          "costume_id": "104801",
+          "wiki_title": "东瀛佐敦",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104802",
+          "wiki_title": "【Aurore☆Vacances】东瀛佐敦",
+          "label": "【Aurore☆Vacances】",
+          "is_base": false
+        },
+        {
+          "costume_id": "104803",
+          "wiki_title": "【Highkey☆Hallowed】东瀛佐敦",
+          "label": "【Highkey☆Hallowed】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1049",
+      "name_cn": "中山庆典",
+      "name_en": "Nakayama Festa",
+      "name_ja": "ナカヤマフェスタ",
+      "official_slug": "nakayamafesta",
+      "implemented": true,
+      "wiki_title": "中山庆典",
+      "variants": [
+        {
+          "costume_id": "104901",
+          "wiki_title": "中山庆典",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "104902",
+          "wiki_title": "【祝祭遊戯】ナカヤマフェスタ",
+          "label": "【祝祭遊戯】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1050",
+      "name_cn": "成田大进",
+      "name_en": "Narita Taishin",
+      "name_ja": "ナリタタイシン",
+      "official_slug": "naritataishin",
+      "implemented": true,
+      "wiki_title": "成田大进",
+      "variants": [
+        {
+          "costume_id": "105001",
+          "wiki_title": "成田大进",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105002",
+          "wiki_title": "【ディファレンス・エンジニア】成田大进",
+          "label": "【ディファレンス・エンジニア】",
+          "is_base": false
+        },
+        {
+          "costume_id": "105003",
+          "wiki_title": "【迷光オーヴァライド】成田大进",
+          "label": "【迷光オーヴァライド】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1051",
+      "name_cn": "西野花",
+      "name_en": "Nishino Flower",
+      "name_ja": "ニシノフラワー",
+      "official_slug": "nishinoflower",
+      "implemented": true,
+      "wiki_title": "西野花",
+      "variants": [
+        {
+          "costume_id": "105101",
+          "wiki_title": "西野花",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105102",
+          "wiki_title": "【Sweet Juneberry】西野花",
+          "label": "【Sweet Juneberry】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1052",
+      "name_cn": "春乌拉拉",
+      "name_en": "Haru Urara",
+      "name_ja": "ハルウララ",
+      "official_slug": "haruurara",
+      "implemented": true,
+      "wiki_title": "春乌拉拉",
+      "variants": [
+        {
+          "costume_id": "105202",
+          "wiki_title": "【初うらら♪さくさくら】春乌拉拉",
+          "label": "【初うらら♪さくさくら】",
+          "is_base": false
+        },
+        {
+          "costume_id": "105201",
+          "wiki_title": "春乌拉拉",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1053",
+      "name_cn": "青竹回忆",
+      "name_en": "Bamboo Memory",
+      "name_ja": "バンブーメモリー",
+      "official_slug": "bamboomemory",
+      "implemented": true,
+      "wiki_title": "青竹回忆",
+      "variants": [
+        {
+          "costume_id": "105301",
+          "wiki_title": "青竹回忆",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105302",
+          "wiki_title": "【Ultra☆Marine】青竹回忆",
+          "label": "【Ultra☆Marine】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1054",
+      "name_cn": "微光飞驹",
+      "name_en": "Biko Pegasus",
+      "name_ja": "ビコーペガサス",
+      "official_slug": "bikopegasus",
+      "implemented": true,
+      "wiki_title": "微光飞驹",
+      "variants": [
+        {
+          "costume_id": "105401",
+          "wiki_title": "微光飞驹",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1055",
+      "name_cn": "美丽周日",
+      "name_en": "Marvelous Sunday",
+      "name_ja": "マーベラスサンデー",
+      "official_slug": "marveloussunday",
+      "implemented": true,
+      "wiki_title": "美丽周日",
+      "variants": [
+        {
+          "costume_id": "105501",
+          "wiki_title": "美丽周日",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105502",
+          "wiki_title": "【トリック☆リボネッタ】美丽周日",
+          "label": "【トリック☆リボネッタ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1056",
+      "name_cn": "待兼福来",
+      "name_en": "Matikane fukukitaru",
+      "name_ja": "マチカネフクキタル",
+      "official_slug": "matikanefukukitaru",
+      "implemented": true,
+      "wiki_title": "待兼福来",
+      "variants": [
+        {
+          "costume_id": "105602",
+          "wiki_title": "【吉兆・初あらし】待兼福来",
+          "label": "【吉兆・初あらし】",
+          "is_base": false
+        },
+        {
+          "costume_id": "105601",
+          "wiki_title": "待兼福来",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1057",
+      "name_cn": "千明代表",
+      "name_en": "Mr. C.B.",
+      "name_ja": "ミスターシービー",
+      "official_slug": "mrcb",
+      "implemented": true,
+      "wiki_title": "千明代表",
+      "variants": [
+        {
+          "costume_id": "105701",
+          "wiki_title": "千明代表",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105702",
+          "wiki_title": "【絢爛花道歌舞く君】千明代表",
+          "label": "【絢爛花道歌舞く君】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1058",
+      "name_cn": "名将怒涛",
+      "name_en": "Meisho Doto",
+      "name_ja": "メイショウドトウ",
+      "official_slug": "meishodoto",
+      "implemented": true,
+      "wiki_title": "名将怒涛",
+      "variants": [
+        {
+          "costume_id": "105801",
+          "wiki_title": "名将怒涛",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105802",
+          "wiki_title": "【Dot-o'-Lantern】名将怒涛",
+          "label": "【Dot-o'-Lantern】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1059",
+      "name_cn": "目白多伯",
+      "name_en": "Mejiro Dober",
+      "name_ja": "メジロドーベル",
+      "official_slug": "mejirodober",
+      "implemented": true,
+      "wiki_title": "目白多伯",
+      "variants": [
+        {
+          "costume_id": "105901",
+          "wiki_title": "目白多伯",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "105902",
+          "wiki_title": "【バカンス・サフィール】目白多伯",
+          "label": "【バカンス・サフィール】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1060",
+      "name_cn": "优秀素质",
+      "name_en": "Nice Nature",
+      "name_ja": "ナイスネイチャ",
+      "official_slug": "nicenature",
+      "implemented": true,
+      "wiki_title": "优秀素质",
+      "variants": [
+        {
+          "costume_id": "106002",
+          "wiki_title": "【RUN＆WIN】优秀素质",
+          "label": "【RUN＆WIN】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106003",
+          "wiki_title": "【ネガイノカサネ】优秀素质",
+          "label": "【ネガイノカサネ】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106001",
+          "wiki_title": "优秀素质",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1061",
+      "name_cn": "帝王光辉",
+      "name_en": "King Halo",
+      "name_ja": "キングヘイロー",
+      "official_slug": "kinghalo",
+      "implemented": true,
+      "wiki_title": "帝王光辉",
+      "variants": [
+        {
+          "costume_id": "106102",
+          "wiki_title": "【白く気高き激励の装】帝王光辉",
+          "label": "【白く気高き激励の装】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106103",
+          "wiki_title": "【Evergreen Identity】帝王光辉",
+          "label": "【Evergreen Identity】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106101",
+          "wiki_title": "帝王光辉",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1062",
+      "name_cn": "待兼诗歌剧",
+      "name_en": "Matikane tannhauser",
+      "name_ja": "マチカネタンホイザ",
+      "official_slug": "matikanetannhauser",
+      "implemented": true,
+      "wiki_title": "待兼诗歌剧",
+      "variants": [
+        {
+          "costume_id": "106202",
+          "wiki_title": "【ブルー・タービュランス】待兼诗歌剧",
+          "label": "【ブルー・タービュランス】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106201",
+          "wiki_title": "待兼诗歌剧",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1063",
+      "name_cn": "生野狄杜斯",
+      "name_en": "Ikuno Dictus",
+      "name_ja": "イクノディクタス",
+      "official_slug": "ikunodictus",
+      "implemented": true,
+      "wiki_title": "生野狄杜斯",
+      "variants": [
+        {
+          "costume_id": "106302",
+          "wiki_title": "【逍遥、整然たる路を】イクノディクタス",
+          "label": "【逍遥、整然たる路を】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106301",
+          "wiki_title": "生野狄杜斯",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1064",
+      "name_cn": "目白善信",
+      "name_en": "Mejiro Palmer",
+      "name_ja": "メジロパーマー",
+      "official_slug": "mejiropalmer",
+      "implemented": true,
+      "wiki_title": "目白善信",
+      "variants": [
+        {
+          "costume_id": "106401",
+          "wiki_title": "目白善信",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "106402",
+          "wiki_title": "【赤心のトナカイさん】目白善信",
+          "label": "【赤心のトナカイさん】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1065",
+      "name_cn": "大拓太阳神",
+      "name_en": "Daitaku Helios",
+      "name_ja": "ダイタクヘリオス",
+      "official_slug": "daitakuhelios",
+      "implemented": true,
+      "wiki_title": "大拓太阳神",
+      "variants": [
+        {
+          "costume_id": "106501",
+          "wiki_title": "大拓太阳神",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "106502",
+          "wiki_title": "【Joyful Jamboree!】大拓太阳神",
+          "label": "【Joyful Jamboree!】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1066",
+      "name_cn": "双涡轮",
+      "name_en": "Twin Turbo",
+      "name_ja": "ツインターボ",
+      "official_slug": "twinturbo",
+      "implemented": true,
+      "wiki_title": "双涡轮",
+      "variants": [
+        {
+          "costume_id": "106601",
+          "wiki_title": "双涡轮",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1067",
+      "name_cn": "里见光钻",
+      "name_en": "Satono Diamond",
+      "name_ja": "サトノダイヤモンド",
+      "official_slug": "satonodiamond",
+      "implemented": true,
+      "wiki_title": "里见光钻",
+      "variants": [
+        {
+          "costume_id": "106701",
+          "wiki_title": "里见光钻",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "106702",
+          "wiki_title": "【花形・弥栄之翠】里见光钻",
+          "label": "【花形・弥栄之翠】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106703",
+          "wiki_title": "【シュヴァリエ・ブル】里见光钻",
+          "label": "【シュヴァリエ・ブル】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1068",
+      "name_cn": "北部玄驹",
+      "name_en": "Kitasan Black",
+      "name_ja": "キタサンブラック",
+      "official_slug": "kitasanblack",
+      "implemented": true,
+      "wiki_title": "北部玄驹",
+      "variants": [
+        {
+          "costume_id": "106801",
+          "wiki_title": "北部玄驹",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "106802",
+          "wiki_title": "【真打・慶鶴之志】北部玄驹",
+          "label": "【真打・慶鶴之志】",
+          "is_base": false
+        },
+        {
+          "costume_id": "106803",
+          "wiki_title": "【結願のしまい華】北部玄驹",
+          "label": "【結願のしまい華】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1069",
+      "name_cn": "樱花千代王",
+      "name_en": "Sakura Chiyono O",
+      "name_ja": "サクラチヨノオー",
+      "official_slug": "sakurachiyonoo",
+      "implemented": true,
+      "wiki_title": "樱花千代王",
+      "variants": [
+        {
+          "costume_id": "106901",
+          "wiki_title": "樱花千代王",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "106902",
+          "wiki_title": "【Fleur Enneigée】樱花千代王",
+          "label": "【Fleur Enneigée】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1070",
+      "name_cn": "天狼星象征",
+      "name_en": "Sirius Symboli",
+      "name_ja": "シリウスシンボリ",
+      "official_slug": "siriussymboli",
+      "implemented": true,
+      "wiki_title": "天狼星象征",
+      "variants": [
+        {
+          "costume_id": "107001",
+          "wiki_title": "天狼星象征",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107002",
+          "wiki_title": "【Louve stellaire】天狼星象征",
+          "label": "【Louve stellaire】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1071",
+      "name_cn": "目白阿尔丹",
+      "name_en": "Mejiro Ardan",
+      "name_ja": "メジロアルダン",
+      "official_slug": "mejiroardan",
+      "implemented": true,
+      "wiki_title": "目白阿尔丹",
+      "variants": [
+        {
+          "costume_id": "107101",
+          "wiki_title": "目白阿尔丹",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107102",
+          "wiki_title": "【Neige Émeraude】目白阿尔丹",
+          "label": "【Neige Émeraude】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1072",
+      "name_cn": "八重无敌",
+      "name_en": "Yaeno Muteki",
+      "name_ja": "ヤエノムテキ",
+      "official_slug": "yaenomuteki",
+      "implemented": true,
+      "wiki_title": "八重无敌",
+      "variants": [
+        {
+          "costume_id": "107201",
+          "wiki_title": "八重无敌",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107202",
+          "wiki_title": "【黒将Zen】八重无敌",
+          "label": "【黒将Zen】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1073",
+      "name_cn": "鹤丸刚志",
+      "name_en": "Tsurumaru Tsuyoshi",
+      "name_ja": "ツルマルツヨシ",
+      "official_slug": "tsurumarutsuyoshi",
+      "implemented": true,
+      "wiki_title": "鹤丸刚志",
+      "variants": [
+        {
+          "costume_id": "107301",
+          "wiki_title": "鹤丸刚志",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1074",
+      "name_cn": "目白光明",
+      "name_en": "Mejiro Bright",
+      "name_ja": "メジロブライト",
+      "official_slug": "mejirobright",
+      "implemented": true,
+      "wiki_title": "目白光明",
+      "variants": [
+        {
+          "costume_id": "107401",
+          "wiki_title": "目白光明",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107402",
+          "wiki_title": "【清らに星澄むスノーロリィタ】目白光明",
+          "label": "【清らに星澄むスノーロリィタ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "谋勇兼备",
+      "name_en": "Daring Tact",
+      "name_ja": "デアリングタクト",
+      "official_slug": "daringtact",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": "1076",
+      "name_cn": "樱花桂冠",
+      "name_en": "Sakura Laurel",
+      "name_ja": "サクラローレル",
+      "official_slug": "sakuralaurel",
+      "implemented": true,
+      "wiki_title": "樱花桂冠",
+      "variants": [
+        {
+          "costume_id": "107601",
+          "wiki_title": "樱花桂冠",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107602",
+          "wiki_title": "【Nouvelle pousse】サクラローレル",
+          "label": "【Nouvelle pousse】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1077",
+      "name_cn": "成田路",
+      "name_en": "Narita Top Road",
+      "name_ja": "ナリタトップロード",
+      "official_slug": "naritatoproad",
+      "implemented": true,
+      "wiki_title": "成田路",
+      "variants": [
+        {
+          "costume_id": "107701",
+          "wiki_title": "成田路",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107702",
+          "wiki_title": "【Celestial Road】成田路",
+          "label": "【Celestial Road】",
+          "is_base": false
+        },
+        {
+          "costume_id": "107703",
+          "wiki_title": "【万福龍湯伝・頂】ナリタトップロード",
+          "label": "【万福龍湯伝・頂】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1078",
+      "name_cn": "也文摄辉",
+      "name_en": "Yamanin Zephyr",
+      "name_ja": "ヤマニンゼファー",
+      "official_slug": "yamaninzephyr",
+      "implemented": true,
+      "wiki_title": "也文摄辉",
+      "variants": [
+        {
+          "costume_id": "107801",
+          "wiki_title": "也文摄辉",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "107802",
+          "wiki_title": "【Sugary Wind】也文摄辉",
+          "label": "【Sugary Wind】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1079",
+      "name_cn": "狂怒乐章",
+      "name_en": "Furioso",
+      "name_ja": "フリオーソ",
+      "official_slug": "furioso",
+      "implemented": true,
+      "wiki_title": "狂怒乐章",
+      "variants": [
+        {
+          "costume_id": "107901",
+          "wiki_title": "狂怒乐章",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1080",
+      "name_cn": "创升",
+      "name_en": "Transcend",
+      "name_ja": "トランセンド",
+      "official_slug": "transcend",
+      "implemented": true,
+      "wiki_title": "创升",
+      "variants": [
+        {
+          "costume_id": "108001",
+          "wiki_title": "创升",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108002",
+          "wiki_title": "【宵闇ネオカグラ】トランセンド",
+          "label": "【宵闇ネオカグラ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1081",
+      "name_cn": "希望之城",
+      "name_en": "Espoir City",
+      "name_ja": "エスポワールシチー",
+      "official_slug": "espoircity",
+      "implemented": true,
+      "wiki_title": "希望之城",
+      "variants": [
+        {
+          "costume_id": "108101",
+          "wiki_title": "希望之城",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1082",
+      "name_cn": "北方飞翔",
+      "name_en": "North Flight",
+      "name_ja": "ノースフライト",
+      "official_slug": "northflight",
+      "implemented": true,
+      "wiki_title": "北方飞翔",
+      "variants": [
+        {
+          "costume_id": "108201",
+          "wiki_title": "北方飞翔",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108202",
+          "wiki_title": "【水縹の一閃】ノースフライト",
+          "label": "【水縹の一閃】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1083",
+      "name_cn": "吉兆",
+      "name_en": "Symboli Kris S",
+      "name_ja": "シンボリクリスエス",
+      "official_slug": "symbolikriss",
+      "implemented": true,
+      "wiki_title": "吉兆",
+      "variants": [
+        {
+          "costume_id": "108301",
+          "wiki_title": "吉兆",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108302",
+          "wiki_title": "【Jetblack Automaton】吉兆",
+          "label": "【Jetblack Automaton】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1084",
+      "name_cn": "谷水琴蕾",
+      "name_en": "Tanino Gimlet",
+      "name_ja": "タニノギムレット",
+      "official_slug": "taninogimlet",
+      "implemented": true,
+      "wiki_title": "谷水琴蕾",
+      "variants": [
+        {
+          "costume_id": "108401",
+          "wiki_title": "谷水琴蕾",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108402",
+          "wiki_title": "【With a Twist】谷水琴蕾",
+          "label": "【With a Twist】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1085",
+      "name_cn": "第一红宝石",
+      "name_en": "Daiichi Ruby",
+      "name_ja": "ダイイチルビー",
+      "official_slug": "daiichiruby",
+      "implemented": true,
+      "wiki_title": "第一红宝石",
+      "variants": [
+        {
+          "costume_id": "108501",
+          "wiki_title": "第一红宝石",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108502",
+          "wiki_title": "【Flowing Blue】第一红宝石",
+          "label": "【Flowing Blue】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1086",
+      "name_cn": "目白高峰",
+      "name_en": "Mejiro Ramonu",
+      "name_ja": "メジロラモーヌ",
+      "official_slug": "mejiroramonu",
+      "implemented": true,
+      "wiki_title": "目白高峰",
+      "variants": [
+        {
+          "costume_id": "108601",
+          "wiki_title": "目白高峰",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108602",
+          "wiki_title": "【Untouchable Eden】目白高峰",
+          "label": "【Untouchable Eden】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1087",
+      "name_cn": "真弓快车",
+      "name_en": "Aston Machan",
+      "name_ja": "アストンマーチャン",
+      "official_slug": "astonmachan",
+      "implemented": true,
+      "wiki_title": "真弓快车",
+      "variants": [
+        {
+          "costume_id": "108701",
+          "wiki_title": "真弓快车",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108702",
+          "wiki_title": "【溶けない砂糖菓子】真弓快车",
+          "label": "【溶けない砂糖菓子】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1088",
+      "name_cn": "里见皇冠",
+      "name_en": "Satono Crown",
+      "name_ja": "サトノクラウン",
+      "official_slug": "satonocrown",
+      "implemented": true,
+      "wiki_title": "里见皇冠",
+      "variants": [
+        {
+          "costume_id": "108801",
+          "wiki_title": "里见皇冠",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108802",
+          "wiki_title": "【晴島花麗】里见皇冠",
+          "label": "【晴島花麗】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1089",
+      "name_cn": "高尚骏逸",
+      "name_en": "Cheval Grand",
+      "name_ja": "シュヴァルグラン",
+      "official_slug": "chevalgrand",
+      "implemented": true,
+      "wiki_title": "高尚骏逸",
+      "variants": [
+        {
+          "costume_id": "108901",
+          "wiki_title": "高尚骏逸",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "108902",
+          "wiki_title": "【夏凪ネイビードロップ】高尚骏逸",
+          "label": "【夏凪ネイビードロップ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1090",
+      "name_cn": "极峰",
+      "name_en": "Verxina",
+      "name_ja": "ヴィルシーナ",
+      "official_slug": "verxina",
+      "implemented": true,
+      "wiki_title": "极峰",
+      "variants": [
+        {
+          "costume_id": "109001",
+          "wiki_title": "极峰",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1091",
+      "name_cn": "强击",
+      "name_en": "Vivlos",
+      "name_ja": "ヴィブロス",
+      "official_slug": "vivlos",
+      "implemented": true,
+      "wiki_title": "强击",
+      "variants": [
+        {
+          "costume_id": "109101",
+          "wiki_title": "强击",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "109102",
+          "wiki_title": "【Éclat d'été】强击",
+          "label": "【Éclat d'été】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1092",
+      "name_cn": "烈焰快驹",
+      "name_en": "Dantsu Flame",
+      "name_ja": "ダンツフレーム",
+      "official_slug": "dantsuflame",
+      "implemented": true,
+      "wiki_title": "烈焰快驹",
+      "variants": [
+        {
+          "costume_id": "109201",
+          "wiki_title": "烈焰快驹",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1093",
+      "name_cn": "凯斯奇迹",
+      "name_en": "K.S.Miracle",
+      "name_ja": "ケイエスミラクル",
+      "official_slug": "ksmiracle",
+      "implemented": true,
+      "wiki_title": "凯斯奇迹",
+      "variants": [
+        {
+          "costume_id": "109301",
+          "wiki_title": "凯斯奇迹",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "109302",
+          "wiki_title": "【秋日色アンダンテ】凯斯奇迹",
+          "label": "【秋日色アンダンテ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1094",
+      "name_cn": "森林宝穴",
+      "name_en": "Jungle Pocket",
+      "name_ja": "ジャングルポケット",
+      "official_slug": "junglepocket",
+      "implemented": true,
+      "wiki_title": "森林宝穴",
+      "variants": [
+        {
+          "costume_id": "109401",
+          "wiki_title": "森林宝穴",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "109402",
+          "wiki_title": "【ヴァーミリオン・ヘッド】ジャングルポケット",
+          "label": "【ヴァーミリオン・ヘッド】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1095",
+      "name_cn": "信念",
+      "name_en": "Believe",
+      "name_ja": "ビリーヴ",
+      "official_slug": "believe",
+      "implemented": true,
+      "wiki_title": "信念",
+      "variants": [
+        {
+          "costume_id": "109501",
+          "wiki_title": "信念",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1096",
+      "name_cn": "莫名其妙",
+      "name_en": "No Reason",
+      "name_ja": "ノーリーズン",
+      "official_slug": "noreason",
+      "implemented": true,
+      "wiki_title": "莫名其妙",
+      "variants": [
+        {
+          "costume_id": "109601",
+          "wiki_title": "莫名其妙",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1097",
+      "name_cn": "爱如往昔",
+      "name_en": "Still in Love",
+      "name_ja": "スティルインラブ",
+      "official_slug": "stillinlove",
+      "implemented": true,
+      "wiki_title": "爱如往昔",
+      "variants": [
+        {
+          "costume_id": "109701",
+          "wiki_title": "爱如往昔",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1098",
+      "name_cn": "小林历奇",
+      "name_en": "Copano Rickey",
+      "name_ja": "コパノリッキー",
+      "official_slug": "copanorickey",
+      "implemented": true,
+      "wiki_title": "小林历奇",
+      "variants": [
+        {
+          "costume_id": "109801",
+          "wiki_title": "小林历奇",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "109802",
+          "wiki_title": "【光彩陸離☆招福衣】小林历奇",
+          "label": "【光彩陸離☆招福衣】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1099",
+      "name_cn": "北港火山",
+      "name_en": "Hokko Tarumae",
+      "name_ja": "ホッコータルマエ",
+      "official_slug": "hokkotarumae",
+      "implemented": true,
+      "wiki_title": "北港火山",
+      "variants": [
+        {
+          "costume_id": "109901",
+          "wiki_title": "北港火山",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "109902",
+          "wiki_title": "【パステルマリン・ロコドル】北港火山",
+          "label": "【パステルマリン・ロコドル】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1100",
+      "name_cn": "奇锐骏",
+      "name_en": "Wonder Acute",
+      "name_ja": "ワンダーアキュート",
+      "official_slug": "wonderacute",
+      "implemented": true,
+      "wiki_title": "奇锐骏",
+      "variants": [
+        {
+          "costume_id": "110001",
+          "wiki_title": "奇锐骏",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110002",
+          "wiki_title": "【柔灯・湯の香の装い】ワンダーアキュート",
+          "label": "【柔灯・湯の香の装い】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "大森逊",
+      "name_en": "Samson Big",
+      "name_ja": "サムソンビッグ",
+      "official_slug": "samsonbig",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": "1102",
+      "name_cn": "万籁争鸣",
+      "name_en": "Sounds of Earth",
+      "name_ja": "サウンズオブアース",
+      "official_slug": "soundsofearth",
+      "implemented": true,
+      "wiki_title": "万籁争鸣",
+      "variants": [
+        {
+          "costume_id": "110201",
+          "wiki_title": "万籁争鸣",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110202",
+          "wiki_title": "【ソナタ・アッラ・メンタ】サウンズオブアース",
+          "label": "【ソナタ・アッラ・メンタ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1103",
+      "name_cn": "罗伊斯兄弟",
+      "name_en": "Royce and Royce",
+      "name_ja": "ロイスアンドロイス",
+      "official_slug": "royceandroyce",
+      "implemented": true,
+      "wiki_title": "【Inspiring Genius】ロイスアンドロイス",
+      "variants": [
+        {
+          "costume_id": "110301",
+          "wiki_title": "【Inspiring Genius】ロイスアンドロイス",
+          "label": "【Inspiring Genius】",
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1104",
+      "name_cn": "葛城王牌",
+      "name_en": "Katsuragi Ace",
+      "name_ja": "カツラギエース",
+      "official_slug": "katsuragiace",
+      "implemented": true,
+      "wiki_title": "葛城王牌",
+      "variants": [
+        {
+          "costume_id": "110401",
+          "wiki_title": "葛城王牌",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110402",
+          "wiki_title": "【雅号・墨龍】葛城王牌",
+          "label": "【雅号・墨龍】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1105",
+      "name_cn": "新宇宙",
+      "name_en": "Neo Universe",
+      "name_ja": "ネオユニヴァース",
+      "official_slug": "neouniverse",
+      "implemented": true,
+      "wiki_title": "新宇宙",
+      "variants": [
+        {
+          "costume_id": "110501",
+          "wiki_title": "新宇宙",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110502",
+          "wiki_title": "【Like “ZEER”】新宇宙",
+          "label": "【Like “ZEER”】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1106",
+      "name_cn": "菱钻奇宝",
+      "name_en": "Hishi Miracle",
+      "name_ja": "ヒシミラクル",
+      "official_slug": "hishimiracle",
+      "implemented": true,
+      "wiki_title": "菱钻奇宝",
+      "variants": [
+        {
+          "costume_id": "110601",
+          "wiki_title": "菱钻奇宝",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110602",
+          "wiki_title": "【ハッピー・リトル・ノーツ】菱钻奇宝",
+          "label": "【ハッピー・リトル・ノーツ】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1107",
+      "name_cn": "跳舞城",
+      "name_en": "Tap Dance City",
+      "name_ja": "タップダンスシチー",
+      "official_slug": "tapdancecity",
+      "implemented": true,
+      "wiki_title": "跳舞城",
+      "variants": [
+        {
+          "costume_id": "110701",
+          "wiki_title": "跳舞城",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110702",
+          "wiki_title": "【Tap! Tap! Tap!】跳舞城",
+          "label": "【Tap! Tap! Tap!】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1108",
+      "name_cn": "大鸣大放",
+      "name_en": "Duramente",
+      "name_ja": "ドゥラメンテ",
+      "official_slug": "duramente",
+      "implemented": true,
+      "wiki_title": "大鸣大放",
+      "variants": [
+        {
+          "costume_id": "110801",
+          "wiki_title": "大鸣大放",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1109",
+      "name_cn": "莱茵力量",
+      "name_en": "Rhein Kraft",
+      "name_ja": "ラインクラフト",
+      "official_slug": "rheinkraft",
+      "implemented": true,
+      "wiki_title": "莱茵力量",
+      "variants": [
+        {
+          "costume_id": "110901",
+          "wiki_title": "莱茵力量",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "110902",
+          "wiki_title": "【Eternal Fairytale】莱茵力量",
+          "label": "【Eternal Fairytale】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1110",
+      "name_cn": "西沙里奥",
+      "name_en": "Cesario",
+      "name_ja": "シーザリオ",
+      "official_slug": "cesario",
+      "implemented": true,
+      "wiki_title": "西沙里奥",
+      "variants": [
+        {
+          "costume_id": "111001",
+          "wiki_title": "西沙里奥",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "111002",
+          "wiki_title": "【Twinbell Queen】西沙里奥",
+          "label": "【Twinbell Queen】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1111",
+      "name_cn": "空中救世主",
+      "name_en": "Air Messiah",
+      "name_ja": "エアメサイア",
+      "official_slug": "airmessiah",
+      "implemented": true,
+      "wiki_title": "空中救世主",
+      "variants": [
+        {
+          "costume_id": "111101",
+          "wiki_title": "空中救世主",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1112",
+      "name_cn": "勇敢之心",
+      "name_en": "Daring Heart",
+      "name_ja": "デアリングハート",
+      "official_slug": "daringheart",
+      "implemented": true,
+      "wiki_title": "勇敢的心",
+      "variants": [
+        {
+          "costume_id": "111201",
+          "wiki_title": "勇敢的心",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1113",
+      "name_cn": "房一潘多拉",
+      "name_en": "Fusaichi Pandora",
+      "name_ja": "フサイチパンドラ",
+      "official_slug": "fusaichipandora",
+      "implemented": true,
+      "wiki_title": "房一潘多拉",
+      "variants": [
+        {
+          "costume_id": "111301",
+          "wiki_title": "房一潘多拉",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1114",
+      "name_cn": "迷人景致",
+      "name_en": "Buena Vista",
+      "name_ja": "ブエナビスタ",
+      "official_slug": "buenavista",
+      "implemented": true,
+      "wiki_title": "迷人景致",
+      "variants": [
+        {
+          "costume_id": "111401",
+          "wiki_title": "迷人景致",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1115",
+      "name_cn": "黄金巨匠",
+      "name_en": "Orfevre",
+      "name_ja": "オルフェーヴル",
+      "official_slug": "orfevre",
+      "implemented": true,
+      "wiki_title": "黄金巨匠",
+      "variants": [
+        {
+          "costume_id": "111501",
+          "wiki_title": "黄金巨匠",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1116",
+      "name_cn": "贵妇人",
+      "name_en": "Gentildonna",
+      "name_ja": "ジェンティルドンナ",
+      "official_slug": "gentildonna",
+      "implemented": true,
+      "wiki_title": "贵妇人",
+      "variants": [
+        {
+          "costume_id": "111601",
+          "wiki_title": "贵妇人",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "111602",
+          "wiki_title": "【La dama perfetta】ジェンティルドンナ",
+          "label": "【La dama perfetta】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1117",
+      "name_cn": "凯旋芭蕾",
+      "name_en": "Win Variation",
+      "name_ja": "ウインバリアシオン",
+      "official_slug": "winvariation",
+      "implemented": true,
+      "wiki_title": "凯旋芭蕾",
+      "variants": [
+        {
+          "costume_id": "111701",
+          "wiki_title": "凯旋芭蕾",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1118",
+      "name_cn": "爱慕律动",
+      "name_en": "Admire Groove",
+      "name_ja": "アドマイヤグルーヴ",
+      "official_slug": "admiregroove",
+      "implemented": true,
+      "wiki_title": "爱慕律动",
+      "variants": [
+        {
+          "costume_id": "111801",
+          "wiki_title": "爱慕律动",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1119",
+      "name_cn": "梦之旅",
+      "name_en": "Dream Journey",
+      "name_ja": "ドリームジャーニー",
+      "official_slug": "dreamjourney",
+      "implemented": true,
+      "wiki_title": "梦之旅",
+      "variants": [
+        {
+          "costume_id": "111901",
+          "wiki_title": "梦之旅",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "111902",
+          "wiki_title": "【雪白の夢路】ドリームジャーニー",
+          "label": "【雪白の夢路】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1120",
+      "name_cn": "金镇之光",
+      "name_en": "Calstone Light O",
+      "name_ja": "カルストンライトオ",
+      "official_slug": "calstonelighto",
+      "implemented": true,
+      "wiki_title": "金镇之光",
+      "variants": [
+        {
+          "costume_id": "112001",
+          "wiki_title": "金镇之光",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1121",
+      "name_cn": "多旺达",
+      "name_en": "Durandal",
+      "name_ja": "デュランダル",
+      "official_slug": "durandal",
+      "implemented": true,
+      "wiki_title": "多旺达",
+      "variants": [
+        {
+          "costume_id": "112101",
+          "wiki_title": "多旺达",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1124",
+      "name_cn": "吹波糖",
+      "name_en": "Bubble Gum Fellow",
+      "name_ja": "バブルガムフェロー",
+      "official_slug": "bubblegumfellow",
+      "implemented": true,
+      "wiki_title": "吹波糖",
+      "variants": [
+        {
+          "costume_id": "112401",
+          "wiki_title": "吹波糖",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "112402",
+          "wiki_title": "【暁光】バブルガムフェロー",
+          "label": "【暁光】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "樱花千岁王",
+      "name_en": "Sakura Chitose O",
+      "name_ja": "サクラチトセオー",
+      "official_slug": "sakurachitoseo",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": "1127",
+      "name_cn": "超常骏骥",
+      "name_en": "Fenomeno",
+      "name_ja": "フェノーメノ",
+      "official_slug": "fenomeno",
+      "implemented": true,
+      "wiki_title": "超常骏骥",
+      "variants": [
+        {
+          "costume_id": "112701",
+          "wiki_title": "超常骏骥",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "疾风装束",
+      "name_en": "Blast Onepiece",
+      "name_ja": "ブラストワンピース",
+      "official_slug": "blastonepiece",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": "1129",
+      "name_cn": "杏目",
+      "name_en": "Almond Eye",
+      "name_ja": "アーモンドアイ",
+      "official_slug": "almondeye",
+      "implemented": true,
+      "wiki_title": "杏目",
+      "variants": [
+        {
+          "costume_id": "112901",
+          "wiki_title": "杏目",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1130",
+      "name_cn": "旺紫丁",
+      "name_en": "Lucky Lilac",
+      "name_ja": "ラッキーライラック",
+      "official_slug": "luckylilac",
+      "implemented": true,
+      "wiki_title": "旺紫丁",
+      "variants": [
+        {
+          "costume_id": "113001",
+          "wiki_title": "旺紫丁",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1131",
+      "name_cn": "放声欢呼",
+      "name_en": "Gran Alegria",
+      "name_ja": "グランアレグリア",
+      "official_slug": "granalegria",
+      "implemented": true,
+      "wiki_title": "放声欢呼",
+      "variants": [
+        {
+          "costume_id": "113101",
+          "wiki_title": "放声欢呼",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1132",
+      "name_cn": "唯独爱你",
+      "name_en": "Loves Only You",
+      "name_ja": "ラヴズオンリーユー",
+      "official_slug": "lovesonlyyou",
+      "implemented": true,
+      "wiki_title": "唯独爱你",
+      "variants": [
+        {
+          "costume_id": "113201",
+          "wiki_title": "唯独爱你",
+          "label": null,
+          "is_base": true
+        },
+        {
+          "costume_id": "113202",
+          "wiki_title": "【Love-Linked Aster】ラヴズオンリーユー",
+          "label": "【Love-Linked Aster】",
+          "is_base": false
+        }
+      ]
+    },
+    {
+      "id": "1133",
+      "name_cn": "创世驹",
+      "name_en": "Chrono Genesis",
+      "name_ja": "クロノジェネシス",
+      "official_slug": "chronogenesis",
+      "implemented": true,
+      "wiki_title": "创世驹",
+      "variants": [
+        {
+          "costume_id": "113301",
+          "wiki_title": "创世驹",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1134",
+      "name_cn": "机伶金花",
+      "name_en": "Curren Bouquetd'or",
+      "name_ja": "カレンブーケドール",
+      "official_slug": "currenbouquetdor",
+      "implemented": true,
+      "wiki_title": "机伶金花",
+      "variants": [
+        {
+          "costume_id": "113401",
+          "wiki_title": "机伶金花",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1135",
+      "name_cn": "黄金旅程",
+      "name_en": "Stay Gold",
+      "name_ja": "ステイゴールド",
+      "official_slug": "staygold",
+      "implemented": true,
+      "wiki_title": "黄金旅程",
+      "variants": [
+        {
+          "costume_id": "113501",
+          "wiki_title": "黄金旅程",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1136",
+      "name_cn": "红色梦想",
+      "name_en": "Red Desire",
+      "name_ja": "レッドディザイア",
+      "official_slug": "reddesire",
+      "implemented": true,
+      "wiki_title": "红色梦想",
+      "variants": [
+        {
+          "costume_id": "113601",
+          "wiki_title": "红色梦想",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": "1137",
+      "name_cn": "神业",
+      "name_en": "Kiseki",
+      "name_ja": "キセキ",
+      "official_slug": "kiseki",
+      "implemented": true,
+      "wiki_title": "【Miracle Author】キセキ",
+      "variants": [
+        {
+          "costume_id": "113701",
+          "wiki_title": "【Miracle Author】キセキ",
+          "label": "【Miracle Author】",
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "青春永驻",
+      "name_en": "Forever Young",
+      "name_ja": "フォーエバーヤング",
+      "official_slug": "foreveryoung",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": null,
+      "name_cn": "洛林军歌",
+      "name_en": "Marche Lorraine",
+      "name_ja": "マルシュロレーヌ",
+      "official_slug": "marchelorraine",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": null,
+      "name_cn": "神威启示",
+      "name_en": "Epiphaneia",
+      "name_ja": "エピファネイア",
+      "official_slug": "epiphaneia",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": null,
+      "name_cn": "标志名驹",
+      "name_en": "Logotype",
+      "name_ja": "ロゴタイプ",
+      "official_slug": "logotype",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": "1143",
+      "name_cn": "比萨胜驹",
+      "name_en": "Victoire Pisa",
+      "name_ja": "ヴィクトワールピサ",
+      "official_slug": "victoirepisa",
+      "implemented": true,
+      "wiki_title": "比萨胜驹",
+      "variants": [
+        {
+          "costume_id": "114301",
+          "wiki_title": "比萨胜驹",
+          "label": null,
+          "is_base": true
+        }
+      ]
+    },
+    {
+      "id": null,
+      "name_cn": "玫瑰帝国",
+      "name_en": "Rose Kingdom",
+      "name_ja": "ローズキングダム",
+      "official_slug": "rosekingdom",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": null,
+      "name_cn": "统治地位",
+      "name_en": "Rulership",
+      "name_ja": "ルーラーシップ",
+      "official_slug": "rulership",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    },
+    {
+      "id": null,
+      "name_cn": "领衔",
+      "name_en": "Titleholder",
+      "name_ja": "タイトルホルダー",
+      "official_slug": "titleholder",
+      "implemented": false,
+      "wiki_title": null,
+      "variants": []
+    }
+  ]
 }

@@ -3,8 +3,9 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping, Sequence
 from urllib.parse import unquote, urlparse
 from urllib.request import ProxyHandler, Request, build_opener
 
@@ -20,12 +21,23 @@ BASE_URL = "https://wiki.biligame.com/umamusume/"
 DEFAULT_AUDIO_OUTPUT_ROOT = "results/voicedata"
 DEFAULT_IMAGE_OUTPUT_ROOT = "results/imagedata/characters"
 DEFAULT_CHARACTERS_JSON = "umamusume_characters.json"
+DEFAULT_ASSET_MANIFEST = ".biligame_asset_manifest.json"
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
 _REAL_USER_AGENT = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/123.0.0.0 Safari/537.36"
 )
+
+
+@dataclass(frozen=True)
+class CharacterAssetTarget:
+    page_title: str
+    name_cn: str
+    name_en: str
+    character_id: str | None = None
+    costume_id: str | None = None
+    is_base: bool = True
 
 
 def _build_opener(use_proxy: bool | None) -> object:
@@ -344,12 +356,131 @@ def extract_text_near_node(node: Tag) -> dict[str, str]:
     return {}
 
 
-def load_characters_from_json(json_path: str | Path) -> dict[str, str]:
+def load_asset_targets_from_json(
+    json_path: str | Path, *, include_variants: bool = False
+) -> list[CharacterAssetTarget]:
     path = Path(json_path)
     data = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(data, dict) and isinstance(data.get("characters"), list):
+        targets: list[CharacterAssetTarget] = []
+        for item in data["characters"]:
+            if not isinstance(item, dict) or not item.get("implemented"):
+                continue
+            name_cn = str(item.get("name_cn") or "").strip()
+            name_en = str(item.get("name_en") or "").strip()
+            page_title = str(item.get("wiki_title") or name_cn).strip()
+            character_id = str(item.get("id") or "").strip() or None
+            variants = item.get("variants")
+            if include_variants and isinstance(variants, list):
+                for variant in variants:
+                    if not isinstance(variant, dict):
+                        continue
+                    variant_title = str(variant.get("wiki_title") or "").strip()
+                    if not variant_title:
+                        continue
+                    targets.append(
+                        CharacterAssetTarget(
+                            page_title=variant_title,
+                            name_cn=name_cn,
+                            name_en=name_en,
+                            character_id=character_id,
+                            costume_id=str(variant.get("costume_id") or "").strip()
+                            or None,
+                            is_base=bool(variant.get("is_base")),
+                        )
+                    )
+            elif page_title and name_cn and name_en:
+                targets.append(
+                    CharacterAssetTarget(
+                        page_title=page_title,
+                        name_cn=name_cn,
+                        name_en=name_en,
+                        character_id=character_id,
+                    )
+                )
+        return targets
     if not isinstance(data, dict):
-        raise ValueError("characters json must be an object mapping cn to en")
-    return {str(k): str(v) for k, v in data.items() if k and v}
+        raise ValueError("characters json must be a mapping or a schema-v2 index")
+    return [
+        CharacterAssetTarget(
+            page_title=str(name_cn),
+            name_cn=str(name_cn),
+            name_en=str(name_en),
+        )
+        for name_cn, name_en in data.items()
+        if name_cn and name_en
+    ]
+
+
+def load_characters_from_json(json_path: str | Path) -> dict[str, str]:
+    return {
+        target.page_title: target.name_en
+        for target in load_asset_targets_from_json(json_path)
+    }
+
+
+def _coerce_asset_targets(
+    targets: Mapping[str, str] | Sequence[CharacterAssetTarget],
+) -> list[CharacterAssetTarget]:
+    if isinstance(targets, Mapping):
+        return [
+            CharacterAssetTarget(
+                page_title=str(name_cn),
+                name_cn=str(name_cn),
+                name_en=str(name_en),
+            )
+            for name_cn, name_en in targets.items()
+        ]
+    return list(targets)
+
+
+def load_asset_manifest(path: str | Path) -> dict[str, Any]:
+    manifest_path = Path(path)
+    if not manifest_path.exists():
+        return {"schema_version": 1, "pages": {}}
+    try:
+        data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {"schema_version": 1, "pages": {}}
+    if not isinstance(data, dict) or not isinstance(data.get("pages"), dict):
+        return {"schema_version": 1, "pages": {}}
+    return data
+
+
+def manifest_page_is_complete(
+    manifest: dict[str, Any],
+    target: CharacterAssetTarget,
+    image_output_root: str | Path,
+) -> bool:
+    entry = manifest.get("pages", {}).get(target.page_title)
+    if not isinstance(entry, dict) or entry.get("name_en") != target.name_en:
+        return False
+    filenames = entry.get("images")
+    if not isinstance(filenames, list) or not filenames:
+        return False
+    image_dir = Path(image_output_root) / target.name_en
+    return all((image_dir / str(filename)).is_file() for filename in filenames)
+
+
+def local_character_dir_has_images(
+    target: CharacterAssetTarget, image_output_root: str | Path
+) -> bool:
+    if not target.is_base:
+        return False
+    image_dir = Path(image_output_root) / target.name_en
+    if not image_dir.is_dir():
+        return False
+    return any(
+        path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+        for path in image_dir.iterdir()
+    )
+
+
+async def save_asset_manifest(path: str | Path, manifest: dict[str, Any]) -> None:
+    manifest_path = Path(path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+    await asyncio.to_thread(manifest_path.write_text, text, encoding="utf-8")
 
 
 def _build_browser_config() -> BrowserConfig:
@@ -410,6 +541,7 @@ async def process_character_assets(
     *,
     char_cn_name: str,
     char_en_name: str,
+    page_title: str | None = None,
     audio_output_root: str | Path,
     image_output_root: str | Path,
     dump_html_dir: str | Path | None,
@@ -423,6 +555,7 @@ async def process_character_assets(
     stats: dict[str, Any] = {
         "cn": char_cn_name,
         "en": char_en_name,
+        "wiki_title": page_title or char_cn_name,
         "success": False,
         "audio_candidates": 0,
         "audio_unique": 0,
@@ -432,9 +565,10 @@ async def process_character_assets(
         "image_unique": 0,
         "image_downloaded": 0,
         "image_skipped": 0,
+        "image_files": [],
     }
     html = await _crawl_character_html(
-        crawler, character_name=char_cn_name, use_proxy=use_proxy
+        crawler, character_name=page_title or char_cn_name, use_proxy=use_proxy
     )
     stats["success"] = True
 
@@ -481,6 +615,7 @@ async def process_character_assets(
         image_items = extract_character_images(soup, char_en_name)
         stats["image_candidates"] = len(image_items)
         stats["image_unique"] = len(image_items)
+        stats["image_files"] = [filename for _, filename in image_items]
         if verbose:
             print(f"[info] {char_cn_name}: found {len(image_items)} unique image items")
 
@@ -525,7 +660,7 @@ async def process_character_assets(
 
 
 async def crawl_biligame_character_assets(
-    targets: dict[str, str],
+    targets: Mapping[str, str] | Sequence[CharacterAssetTarget],
     *,
     audio_output_root: str | Path = DEFAULT_AUDIO_OUTPUT_ROOT,
     image_output_root: str | Path = DEFAULT_IMAGE_OUTPUT_ROOT,
@@ -537,8 +672,12 @@ async def crawl_biligame_character_assets(
     skip_images: bool = False,
     use_proxy: bool | None = None,
     verbose: bool = True,
+    asset_manifest_path: str | Path | None = None,
+    refresh_existing: bool = False,
+    trust_existing_character_dirs: bool = False,
 ) -> dict[str, Any]:
-    if not targets:
+    asset_targets = _coerce_asset_targets(targets)
+    if not asset_targets:
         raise ValueError("No biligame characters provided.")
     if concurrency <= 0:
         raise ValueError("concurrency must be greater than 0.")
@@ -554,19 +693,83 @@ async def crawl_biligame_character_assets(
         "audio_skipped": 0,
         "image_downloaded": 0,
         "image_skipped": 0,
+        "page_skipped": 0,
         "characters": [],
     }
 
-    async with AsyncWebCrawler(config=_build_browser_config(), verbose=False) as crawler:
-        for cn_name, en_name in targets.items():
-            summary["total"] += 1
+    manifest_path = (
+        Path(asset_manifest_path)
+        if asset_manifest_path is not None
+        else Path(image_output_root) / DEFAULT_ASSET_MANIFEST
+    )
+    manifest = load_asset_manifest(manifest_path)
+    pending_targets: list[CharacterAssetTarget] = []
+    for target in asset_targets:
+        summary["total"] += 1
+        skip_reason: str | None = None
+        if not skip_images and not refresh_existing:
+            if manifest_page_is_complete(manifest, target, image_output_root):
+                skip_reason = "manifest"
+            elif trust_existing_character_dirs and local_character_dir_has_images(
+                target, image_output_root
+            ):
+                skip_reason = "trusted-existing-directory"
+                image_dir = Path(image_output_root) / target.name_en
+                manifest["pages"][target.page_title] = {
+                    "name_cn": target.name_cn,
+                    "name_en": target.name_en,
+                    "character_id": target.character_id,
+                    "costume_id": target.costume_id,
+                    "images": sorted(
+                        path.name
+                        for path in image_dir.iterdir()
+                        if path.is_file() and path.suffix.lower() in IMAGE_EXTENSIONS
+                    ),
+                }
+        if skip_reason:
+            summary["success"] += 1
+            summary["page_skipped"] += 1
+            stats = {
+                "cn": target.name_cn,
+                "en": target.name_en,
+                "wiki_title": target.page_title,
+                "success": True,
+                "page_skipped": True,
+                "skip_reason": skip_reason,
+            }
+            summary["characters"].append(stats)
             if verbose:
-                print(f"[info] crawling {cn_name} -> {en_name}")
+                print(
+                    f"[skip-page] {target.page_title} -> {target.name_en} "
+                    f"({skip_reason})"
+                )
+        else:
+            pending_targets.append(target)
+
+    if trust_existing_character_dirs:
+        await save_asset_manifest(manifest_path, manifest)
+
+    if not pending_targets:
+        if verbose:
+            print(
+                "[summary] total={total} success={success} failed={failed} "
+                "page_skipped={page_skipped} image_downloaded={image_downloaded} "
+                "image_skipped={image_skipped}".format(**summary)
+            )
+        return summary
+
+    async with AsyncWebCrawler(config=_build_browser_config(), verbose=False) as crawler:
+        for target in pending_targets:
+            if verbose:
+                print(
+                    f"[info] crawling {target.page_title} -> {target.name_en}"
+                )
             try:
                 stats = await process_character_assets(
                     crawler,
-                    char_cn_name=cn_name,
-                    char_en_name=en_name,
+                    char_cn_name=target.name_cn,
+                    char_en_name=target.name_en,
+                    page_title=target.page_title,
                     audio_output_root=audio_output_root,
                     image_output_root=image_output_root,
                     dump_html_dir=dump_html_dir,
@@ -580,13 +783,14 @@ async def crawl_biligame_character_assets(
             except Exception as exc:
                 summary["failed"] += 1
                 stats = {
-                    "cn": cn_name,
-                    "en": en_name,
+                    "cn": target.name_cn,
+                    "en": target.name_en,
+                    "wiki_title": target.page_title,
                     "success": False,
                     "error": str(exc),
                 }
                 if verbose:
-                    print(f"[error] {cn_name}: {exc}")
+                    print(f"[error] {target.page_title}: {exc}")
             else:
                 summary["success"] += 1
                 if not skip_audio and stats["audio_unique"] == 0:
@@ -597,6 +801,15 @@ async def crawl_biligame_character_assets(
                 summary["audio_skipped"] += stats["audio_skipped"]
                 summary["image_downloaded"] += stats["image_downloaded"]
                 summary["image_skipped"] += stats["image_skipped"]
+                if not skip_images and stats["image_files"]:
+                    manifest["pages"][target.page_title] = {
+                        "name_cn": target.name_cn,
+                        "name_en": target.name_en,
+                        "character_id": target.character_id,
+                        "costume_id": target.costume_id,
+                        "images": stats["image_files"],
+                    }
+                    await save_asset_manifest(manifest_path, manifest)
             summary["characters"].append(stats)
             if page_delay > 0:
                 await asyncio.sleep(page_delay)
@@ -605,6 +818,7 @@ async def crawl_biligame_character_assets(
         print(
             "[summary] total={total} success={success} failed={failed} "
             "no_audio={no_audio} no_image={no_image} "
+            "page_skipped={page_skipped} "
             "audio_downloaded={audio_downloaded} audio_skipped={audio_skipped} "
             "image_downloaded={image_downloaded} image_skipped={image_skipped}".format(
                 **summary

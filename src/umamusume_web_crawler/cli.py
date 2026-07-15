@@ -20,11 +20,16 @@ from umamusume_web_crawler.web.crawler import (
 )
 from umamusume_web_crawler.web.biligame import fetch_biligame_wikitext_expanded
 from umamusume_web_crawler.web.biligame_assets import (
+    CharacterAssetTarget,
     DEFAULT_AUDIO_OUTPUT_ROOT,
     DEFAULT_CHARACTERS_JSON,
     DEFAULT_IMAGE_OUTPUT_ROOT,
     crawl_biligame_character_assets,
-    load_characters_from_json,
+    load_asset_targets_from_json,
+)
+from umamusume_web_crawler.web.character_index import (
+    DEFAULT_NAME_OVERRIDES,
+    update_character_index,
 )
 from umamusume_web_crawler.web.moegirl import fetch_moegirl_wikitext_expanded
 from umamusume_web_crawler.web.umamusu_wiki import fetch_umamusu_wikitext_expanded
@@ -85,19 +90,24 @@ def _proxy_flag(value: bool | None, *, default: bool) -> bool:
     return default if value is None else value
 
 
-def _resolve_asset_targets(args: argparse.Namespace) -> dict[str, str]:
+def _resolve_asset_targets(
+    args: argparse.Namespace,
+) -> dict[str, str] | list[CharacterAssetTarget]:
     if args.character:
         if not args.name or len(args.character) != len(args.name):
             raise SystemExit("--character and --name must be provided with the same count.")
         return dict(zip(args.character, args.name, strict=True))
-    return load_characters_from_json(args.characters_json)
+    return load_asset_targets_from_json(
+        args.characters_json,
+        include_variants=getattr(args, "include_variants", False),
+    )
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Umamusume crawler CLI")
     parser.add_argument(
         "--task",
-        choices=("page", "biligame-assets"),
+        choices=("page", "biligame-assets", "update-character-index"),
         default="page",
         help="Task to run (default: page)",
     )
@@ -198,6 +208,37 @@ def parse_args() -> argparse.Namespace:
         help=f"Characters mapping json file (default: {DEFAULT_CHARACTERS_JSON})",
     )
     parser.add_argument(
+        "--name-overrides",
+        default=DEFAULT_NAME_OVERRIDES,
+        help=(
+            "Manual cn-to-en names used for official characters without a Bwiki page "
+            f"(default: {DEFAULT_NAME_OVERRIDES})"
+        ),
+    )
+    parser.add_argument(
+        "--include-variants",
+        action="store_true",
+        help="Download every costume page from the schema-v2 character index.",
+    )
+    parser.add_argument(
+        "--asset-manifest",
+        default=None,
+        help="Asset manifest path (default: <image-output>/.biligame_asset_manifest.json).",
+    )
+    parser.add_argument(
+        "--refresh-existing",
+        action="store_true",
+        help="Revisit pages recorded as complete in the local asset manifest.",
+    )
+    parser.add_argument(
+        "--trust-existing-character-dirs",
+        action="store_true",
+        help=(
+            "Treat non-empty existing base-character image directories as complete "
+            "without visiting their Bwiki pages."
+        ),
+    )
+    parser.add_argument(
         "--request-delay",
         type=float,
         default=0.2,
@@ -230,9 +271,34 @@ def parse_args() -> argparse.Namespace:
 
 async def _run(args: argparse.Namespace) -> None:
     use_proxy = True if args.use_proxy else False if args.no_proxy else None
+    if args.task == "update-character-index":
+        payload, unresolved = await update_character_index(
+            args.characters_json,
+            overrides_path=args.name_overrides,
+            use_proxy=use_proxy,
+            detail_delay=args.request_delay,
+        )
+        counts = payload["counts"]
+        print(
+            f"Updated {args.characters_json}: characters={counts['characters']} "
+            f"implemented={counts['implemented']} variants={counts['variants']} "
+            f"unresolved={counts['unresolved']}"
+        )
+        for item in unresolved:
+            print(f"[unresolved] {item['source']}: {item['value']}")
+        return
+
     if args.task == "biligame-assets":
         if args.skip_audio and args.skip_images:
             raise SystemExit("--skip-audio and --skip-images cannot both be set.")
+        include_variants = getattr(args, "include_variants", False)
+        if include_variants and not args.skip_audio:
+            raise SystemExit("--include-variants requires --skip-audio.")
+        if include_variants and args.character:
+            raise SystemExit(
+                "--include-variants uses the schema-v2 --characters-json; "
+                "do not combine it with --character."
+            )
         targets = _resolve_asset_targets(args)
         summary = await crawl_biligame_character_assets(
             targets,
@@ -246,6 +312,11 @@ async def _run(args: argparse.Namespace) -> None:
             skip_images=args.skip_images,
             use_proxy=use_proxy,
             verbose=not args.asset_quiet,
+            asset_manifest_path=getattr(args, "asset_manifest", None),
+            refresh_existing=getattr(args, "refresh_existing", False),
+            trust_existing_character_dirs=getattr(
+                args, "trust_existing_character_dirs", False
+            ),
         )
         if args.asset_summary_output:
             output_path = Path(args.asset_summary_output)

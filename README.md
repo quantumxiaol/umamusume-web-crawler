@@ -38,14 +38,16 @@
 | Biligame 页面抓取 | 有 | 有 | 有 | 有 |
 | Moegirl 页面抓取 | 有 | 有 | 有 | 有 |
 | umamusu.wiki 页面抓取 | 有 | 有 | 有 | 有 |
+| 角色/衣装索引更新 | 有 | 有 | 无 | 无 |
 | Biligame 角色音频/图片下载 | 有 | 有 | 无 | 无 |
 | umamusu.wiki 分类图片下载 | 有 | 无 | 有 | 有 |
 | 视觉抓取 | 有 | 有 | 无 | 无 |
 
 补充说明：
 
-- 主 CLI 现在是两个任务：
+- 主 CLI 现在是三个任务：
   - `--task page`：页面抓取
+  - `--task update-character-index`：合并官网角色表与 Biligame 衣装索引
   - `--task biligame-assets`：Biligame 角色音频/图片下载
 - skill 目前只封装三站 wiki 搜索/抓取和 `umamusu.wiki` 分类图片下载，不包含 Google 搜索，也不包含 Biligame 角色资源下载。
 - MCP 目前包含 Google 搜索、三站 wiki 搜索/抓取、`umamusu.wiki` 分类图片下载，不包含 Biligame 角色资源下载。
@@ -55,7 +57,7 @@
 核心文件：
 
 - [src/umamusume_web_crawler/cli.py](src/umamusume_web_crawler/cli.py)
-  主 CLI 入口。支持页面抓取和 `biligame-assets` 两类任务。
+  主 CLI 入口。支持页面抓取、角色索引更新和 `biligame-assets`。
 - [src/umamusume_web_crawler/mcp/server.py](src/umamusume_web_crawler/mcp/server.py)
   MCP 服务与工具定义。
 - [src/umamusume_web_crawler/web/biligame.py](src/umamusume_web_crawler/web/biligame.py)
@@ -66,6 +68,8 @@
   `umamusu.wiki` 搜索、抓取、分类图片下载。
 - [src/umamusume_web_crawler/web/biligame_assets.py](src/umamusume_web_crawler/web/biligame_assets.py)
   Biligame 角色音频/图片批量下载。
+- [src/umamusume_web_crawler/web/character_index.py](src/umamusume_web_crawler/web/character_index.py)
+  官网角色名单与 Biligame 角色/衣装索引合并。
 - [src/umamusume_web_crawler/web/search.py](src/umamusume_web_crawler/web/search.py)
   Google 搜索封装。
 - [skills/umamusume-wiki-crawler/skill.md](skills/umamusume-wiki-crawler/skill.md)
@@ -143,7 +147,7 @@ markdown = wiki_page_to_llm_markdown(target, page, site="biligame")
 ```python
 from umamusume_web_crawler.web.biligame_assets import (
     crawl_biligame_character_assets,
-    load_characters_from_json,
+    load_asset_targets_from_json,
 )
 
 targets = {"特别周": "Special Week", "东海帝皇": "Tokai Teio"}
@@ -157,8 +161,11 @@ summary = await crawl_biligame_character_assets(
     concurrency=4,
 )
 
-# 或从 json 读取
-targets = load_characters_from_json("umamusume_characters.json")
+# 或从 schema-v2 索引读取全部衣装页
+targets = load_asset_targets_from_json(
+    "umamusume_characters.json",
+    include_variants=True,
+)
 ```
 
 默认目录结构：
@@ -238,16 +245,41 @@ umamusume-crawler \
 - `--output`
 - `--use-proxy` / `--no-proxy`
 
-### 2. Biligame 角色资源下载
+### 2. 更新角色/衣装索引
+
+`umamusume_characters.json` 是 schema-v2 索引，包含：
+
+- 中文名、稳定英文目录名、日文名
+- 官网角色 slug 与是否已实装
+- Biligame 角色 ID、衣装 ID 和每个 `【…】` / `〖…〗` 页面标题
+
+当前索引以 Biligame 的“赛马娘一览”为已实装与衣装来源，以官方网站为完整角色和标准英文名来源。尚无 Biligame 页面时，中文名由 `character_name_overrides.json` 人工维护。
+
+```bash
+umamusume-crawler \
+  --task update-character-index \
+  --no-proxy
+```
+
+更新不会把官网尚未实装的角色误加入下载目标；新角色无法自动匹配中文名时会打印 `[unresolved]`，此时把一条 `"中文名": "Official English Name"` 加到 `character_name_overrides.json` 后重跑。
+
+### 3. Biligame 角色资源下载
 
 `--task biligame-assets` 用于批量下载 Biligame 角色音频和图片。
 
 示例：
 
 ```bash
-# 按默认 umamusume_characters.json 批量抓取
+# 按默认索引批量抓取基础角色页
 umamusume-crawler \
   --task biligame-assets
+
+# 汇总下载全部角色的所有衣装立绘到各自英文目录
+umamusume-crawler \
+  --task biligame-assets \
+  --skip-audio \
+  --include-variants \
+  --trust-existing-character-dirs
 
 # 单角色，只抓图片
 umamusume-crawler \
@@ -269,6 +301,13 @@ umamusume-crawler \
 - `results/voicedata/<角色>/`
 - `results/imagedata/characters/<角色>/`
 
+跳过规则：
+
+- 每次成功解析图片页后，文件清单写入 `results/imagedata/characters/.biligame_asset_manifest.json`。
+- 下次运行若 manifest 中的所有文件仍存在，该衣装页会在启动浏览器前直接跳过，因此不会访问角色页。
+- 第一次接管旧目录时可加 `--trust-existing-character-dirs`：非空的基础角色目录会直接登记并跳过；换装页仍会逐页补齐。这个选项表示你确认旧目录完整。
+- 要主动检查角色页有没有新增图片，使用 `--refresh-existing`；仍会按本地文件名跳过重复下载。
+
 相关参数：
 
 - `--audio-output`
@@ -278,6 +317,10 @@ umamusume-crawler \
 - `--character`
 - `--name`
 - `--characters-json`
+- `--include-variants`（要求同时使用 `--skip-audio`）
+- `--asset-manifest`
+- `--trust-existing-character-dirs`
+- `--refresh-existing`
 - `--dump-html`
 - `--request-delay`
 - `--page-delay`
