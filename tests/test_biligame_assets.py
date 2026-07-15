@@ -145,6 +145,75 @@ async def test_complete_manifest_skips_page_without_starting_crawler(
 
 
 @pytest.mark.asyncio
+async def test_image_manifest_does_not_skip_audio_crawl(tmp_path, monkeypatch) -> None:
+    image_root = tmp_path / "images"
+    image_dir = image_root / "Special Week"
+    image_dir.mkdir(parents=True)
+    (image_dir / "special.png").write_bytes(b"image")
+    manifest = image_root / ".biligame_asset_manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "pages": {
+                    "特别周": {
+                        "name_en": "Special Week",
+                        "images": ["special.png"],
+                    }
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    class FakeCrawler:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return False
+
+    mock_process = AsyncMock(
+        return_value={
+            "cn": "特别周",
+            "en": "Special Week",
+            "wiki_title": "特别周",
+            "success": True,
+            "audio_unique": 1,
+            "audio_downloaded": 1,
+            "audio_skipped": 0,
+            "image_unique": 1,
+            "image_downloaded": 0,
+            "image_skipped": 1,
+            "image_files": ["special.png"],
+        }
+    )
+    monkeypatch.setattr(
+        "umamusume_web_crawler.web.biligame_assets.AsyncWebCrawler", FakeCrawler
+    )
+    monkeypatch.setattr(
+        "umamusume_web_crawler.web.biligame_assets.process_character_assets",
+        mock_process,
+    )
+
+    summary = await crawl_biligame_character_assets(
+        {"特别周": "Special Week"},
+        image_output_root=image_root,
+        skip_audio=False,
+        verbose=False,
+        page_delay=0,
+    )
+
+    assert summary["page_skipped"] == 0
+    assert summary["audio_downloaded"] == 1
+    mock_process.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_trusted_existing_base_directory_bootstraps_manifest(
     tmp_path, monkeypatch
 ) -> None:

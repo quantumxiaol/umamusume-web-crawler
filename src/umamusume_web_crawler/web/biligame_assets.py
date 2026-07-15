@@ -707,7 +707,9 @@ async def crawl_biligame_character_assets(
     for target in asset_targets:
         summary["total"] += 1
         skip_reason: str | None = None
-        if not skip_images and not refresh_existing:
+        # The manifest only proves that this page's images are complete.  It
+        # must never suppress an audio crawl when both asset types are enabled.
+        if skip_audio and not skip_images and not refresh_existing:
             if manifest_page_is_complete(manifest, target, image_output_root):
                 skip_reason = "manifest"
             elif trust_existing_character_dirs and local_character_dir_has_images(

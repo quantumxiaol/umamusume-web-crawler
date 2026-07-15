@@ -281,6 +281,11 @@ umamusume-crawler \
   --include-variants \
   --trust-existing-character-dirs
 
+# 按同一份索引下载已实装角色的基础页音频
+umamusume-crawler \
+  --task biligame-assets \
+  --skip-images
+
 # 单角色，只抓图片
 umamusume-crawler \
   --task biligame-assets \
@@ -304,7 +309,8 @@ umamusume-crawler \
 跳过规则：
 
 - 每次成功解析图片页后，文件清单写入 `results/imagedata/characters/.biligame_asset_manifest.json`。
-- 下次运行若 manifest 中的所有文件仍存在，该衣装页会在启动浏览器前直接跳过，因此不会访问角色页。
+- 纯图片模式（`--skip-audio`）下，若 manifest 中的所有文件仍存在，该衣装页会在启动浏览器前直接跳过，因此不会访问角色页。
+- 音频下载也使用 schema-v2 JSON，但只抓每名已实装角色的基础页；图片 manifest 不会跳过音频任务。已有音频文件仍会按文件名复用，但为了发现语音条目仍需访问基础角色页。
 - 第一次接管旧目录时可加 `--trust-existing-character-dirs`：非空的基础角色目录会直接登记并跳过；换装页仍会逐页补齐。这个选项表示你确认旧目录完整。
 - 要主动检查角色页有没有新增图片，使用 `--refresh-existing`；仍会按本地文件名跳过重复下载。
 
