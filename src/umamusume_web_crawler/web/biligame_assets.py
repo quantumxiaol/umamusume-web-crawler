@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import random
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -28,6 +29,11 @@ _REAL_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/123.0.0.0 Safari/537.36"
 )
+_RATE_LIMIT_PATTERN = re.compile(
+    r"(?:http(?: error| status)?\s*)?(?:403|429|567)|"
+    r"too many requests|rate.?limit",
+    re.IGNORECASE,
+)
 
 
 @dataclass(frozen=True)
@@ -38,6 +44,17 @@ class CharacterAssetTarget:
     character_id: str | None = None
     costume_id: str | None = None
     is_base: bool = True
+
+
+async def sleep_with_jitter(delay: float, jitter_ratio: float = 0.25) -> None:
+    if delay <= 0:
+        return
+    jitter = random.uniform(0, delay * max(0.0, jitter_ratio))
+    await asyncio.sleep(delay + jitter)
+
+
+def is_rate_limit_error(exc: BaseException) -> bool:
+    return bool(_RATE_LIMIT_PATTERN.search(str(exc)))
 
 
 def _build_opener(use_proxy: bool | None) -> object:
@@ -532,7 +549,11 @@ async def _crawl_character_html(
     url = f"{BASE_URL}{character_name}"
     result = await crawler.arun(url=url, config=_build_run_config(use_proxy))
     if not result.success or not result.html:
-        raise RuntimeError(f"failed to load {character_name}: {url}")
+        status_code = getattr(result, "status_code", None)
+        status_text = f" (HTTP {status_code})" if status_code else ""
+        raise RuntimeError(
+            f"failed to load {character_name}{status_text}: {url}"
+        )
     return str(result.html)
 
 
@@ -546,6 +567,7 @@ async def process_character_assets(
     image_output_root: str | Path,
     dump_html_dir: str | Path | None,
     request_delay: float,
+    delay_jitter: float,
     semaphore: asyncio.Semaphore,
     skip_audio: bool,
     skip_images: bool,
@@ -629,8 +651,7 @@ async def process_character_assets(
             stats["audio_skipped"] += 1
         else:
             async with semaphore:
-                if request_delay > 0:
-                    await asyncio.sleep(request_delay)
+                await sleep_with_jitter(request_delay, delay_jitter)
                 await download_file(audio_url, mp3_path, use_proxy=use_proxy)
             stats["audio_downloaded"] += 1
         if texts.get("jp") and not jp_path.exists():
@@ -645,8 +666,7 @@ async def process_character_assets(
             stats["image_skipped"] += 1
             return
         async with semaphore:
-            if request_delay > 0:
-                await asyncio.sleep(request_delay)
+            await sleep_with_jitter(request_delay, delay_jitter)
             await download_file(image_url, image_path, use_proxy=use_proxy)
         stats["image_downloaded"] += 1
 
@@ -665,9 +685,9 @@ async def crawl_biligame_character_assets(
     audio_output_root: str | Path = DEFAULT_AUDIO_OUTPUT_ROOT,
     image_output_root: str | Path = DEFAULT_IMAGE_OUTPUT_ROOT,
     dump_html_dir: str | Path | None = None,
-    request_delay: float = 0.2,
-    page_delay: float = 0.5,
-    concurrency: int = 4,
+    request_delay: float = 1.5,
+    page_delay: float = 5.0,
+    concurrency: int = 1,
     skip_audio: bool = False,
     skip_images: bool = False,
     use_proxy: bool | None = None,
@@ -675,12 +695,19 @@ async def crawl_biligame_character_assets(
     asset_manifest_path: str | Path | None = None,
     refresh_existing: bool = False,
     trust_existing_character_dirs: bool = False,
+    max_retries: int = 2,
+    retry_base_delay: float = 5.0,
+    rate_limit_delay: float = 60.0,
+    delay_jitter: float = 0.25,
+    stop_on_rate_limit: bool = True,
 ) -> dict[str, Any]:
     asset_targets = _coerce_asset_targets(targets)
     if not asset_targets:
         raise ValueError("No biligame characters provided.")
     if concurrency <= 0:
         raise ValueError("concurrency must be greater than 0.")
+    if max_retries < 0:
+        raise ValueError("max_retries cannot be negative.")
 
     semaphore = asyncio.Semaphore(concurrency)
     summary: dict[str, Any] = {
@@ -694,6 +721,8 @@ async def crawl_biligame_character_assets(
         "image_downloaded": 0,
         "image_skipped": 0,
         "page_skipped": 0,
+        "aborted_due_to_rate_limit": False,
+        "remaining": 0,
         "characters": [],
     }
 
@@ -761,38 +790,65 @@ async def crawl_biligame_character_assets(
         return summary
 
     async with AsyncWebCrawler(config=_build_browser_config(), verbose=False) as crawler:
-        for target in pending_targets:
+        for target_index, target in enumerate(pending_targets):
             if verbose:
                 print(
                     f"[info] crawling {target.page_title} -> {target.name_en}"
                 )
-            try:
-                stats = await process_character_assets(
-                    crawler,
-                    char_cn_name=target.name_cn,
-                    char_en_name=target.name_en,
-                    page_title=target.page_title,
-                    audio_output_root=audio_output_root,
-                    image_output_root=image_output_root,
-                    dump_html_dir=dump_html_dir,
-                    request_delay=request_delay,
-                    semaphore=semaphore,
-                    skip_audio=skip_audio,
-                    skip_images=skip_images,
-                    use_proxy=use_proxy,
-                    verbose=verbose,
-                )
-            except Exception as exc:
+            stats: dict[str, Any] | None = None
+            final_error: Exception | None = None
+            final_rate_limited = False
+            for attempt in range(max_retries + 1):
+                try:
+                    stats = await process_character_assets(
+                        crawler,
+                        char_cn_name=target.name_cn,
+                        char_en_name=target.name_en,
+                        page_title=target.page_title,
+                        audio_output_root=audio_output_root,
+                        image_output_root=image_output_root,
+                        dump_html_dir=dump_html_dir,
+                        request_delay=request_delay,
+                        delay_jitter=delay_jitter,
+                        semaphore=semaphore,
+                        skip_audio=skip_audio,
+                        skip_images=skip_images,
+                        use_proxy=use_proxy,
+                        verbose=verbose,
+                    )
+                    final_error = None
+                    final_rate_limited = False
+                    break
+                except Exception as exc:
+                    final_error = exc
+                    final_rate_limited = is_rate_limit_error(exc)
+                    if attempt >= max_retries:
+                        break
+                    base_delay = (
+                        rate_limit_delay if final_rate_limited else retry_base_delay
+                    )
+                    retry_delay = base_delay * (2**attempt)
+                    if verbose:
+                        kind = "rate-limit" if final_rate_limited else "error"
+                        print(
+                            f"[retry:{kind}] {target.page_title}: {exc}; "
+                            f"waiting at least {retry_delay:.1f}s "
+                            f"({attempt + 1}/{max_retries})"
+                        )
+                    await sleep_with_jitter(retry_delay, delay_jitter)
+
+            if stats is None:
                 summary["failed"] += 1
                 stats = {
                     "cn": target.name_cn,
                     "en": target.name_en,
                     "wiki_title": target.page_title,
                     "success": False,
-                    "error": str(exc),
+                    "error": str(final_error),
+                    "rate_limited": final_rate_limited,
                 }
                 if verbose:
-                    print(f"[error] {target.page_title}: {exc}")
+                    print(f"[error] {target.page_title}: {final_error}")
             else:
                 summary["success"] += 1
                 if not skip_audio and stats["audio_unique"] == 0:
@@ -813,8 +869,16 @@ async def crawl_biligame_character_assets(
                     }
                     await save_asset_manifest(manifest_path, manifest)
             summary["characters"].append(stats)
-            if page_delay > 0:
-                await asyncio.sleep(page_delay)
+            if final_rate_limited and stop_on_rate_limit:
+                summary["aborted_due_to_rate_limit"] = True
+                summary["remaining"] = len(pending_targets) - target_index - 1
+                if verbose:
+                    print(
+                        "[abort] persistent rate limit detected; stopping this run "
+                        f"with {summary['remaining']} page(s) left for a later resume"
+                    )
+                break
+            await sleep_with_jitter(page_delay, delay_jitter)
 
     if verbose:
         print(

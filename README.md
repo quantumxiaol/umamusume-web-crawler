@@ -314,6 +314,8 @@ umamusume-crawler \
 - 第一次接管旧目录时可加 `--trust-existing-character-dirs`：非空的基础角色目录会直接登记并跳过；换装页仍会逐页补齐。这个选项表示你确认旧目录完整。
 - 要主动检查角色页有没有新增图片，使用 `--refresh-existing`；仍会按本地文件名跳过重复下载。
 
+默认限流策略偏保守：图片单并发、每个实际下载至少等待 1.5 秒、角色页之间至少等待 5 秒，并额外加入最多 25% 的随机抖动。普通错误按 5/10 秒退避；检测到 `403`、`429`、`567` 或 rate-limit 文本时按 60/120 秒退避。连续重试仍受限时会中止整批任务，不继续请求后续页面；稍后重跑即可从 manifest 进度续传。
+
 相关参数：
 
 - `--audio-output`
@@ -331,6 +333,11 @@ umamusume-crawler \
 - `--request-delay`
 - `--page-delay`
 - `--concurrency`
+- `--max-retries`
+- `--retry-base-delay`
+- `--rate-limit-delay`
+- `--delay-jitter`
+- `--continue-on-rate-limit`（不推荐）
 - `--asset-summary-output`
 
 ### 主 CLI 不包含的能力

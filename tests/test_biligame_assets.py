@@ -253,6 +253,44 @@ async def test_trusted_existing_base_directory_bootstraps_manifest(
 
 
 @pytest.mark.asyncio
+async def test_persistent_rate_limit_aborts_remaining_pages(tmp_path, monkeypatch) -> None:
+    class FakeCrawler:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, traceback):
+            return False
+
+    mock_process = AsyncMock(side_effect=RuntimeError("HTTP 429 Too Many Requests"))
+    monkeypatch.setattr(
+        "umamusume_web_crawler.web.biligame_assets.AsyncWebCrawler", FakeCrawler
+    )
+    monkeypatch.setattr(
+        "umamusume_web_crawler.web.biligame_assets.process_character_assets",
+        mock_process,
+    )
+
+    summary = await crawl_biligame_character_assets(
+        {"特别周": "Special Week", "东海帝皇": "Tokai Teio"},
+        image_output_root=tmp_path / "images",
+        skip_audio=True,
+        max_retries=0,
+        page_delay=0,
+        delay_jitter=0,
+        verbose=False,
+    )
+
+    assert summary["aborted_due_to_rate_limit"] is True
+    assert summary["failed"] == 1
+    assert summary["remaining"] == 1
+    assert len(summary["characters"]) == 1
+    assert mock_process.await_count == 1
+
+
+@pytest.mark.asyncio
 async def test_cli_routes_biligame_assets_task(monkeypatch) -> None:
     mock_crawl = AsyncMock(return_value={"total": 1, "success": 1})
     monkeypatch.setattr(cli, "crawl_biligame_character_assets", mock_crawl)

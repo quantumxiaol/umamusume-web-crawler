@@ -241,20 +241,49 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--request-delay",
         type=float,
-        default=0.2,
-        help="Delay in seconds before each asset download (default: 0.2)",
+        default=1.5,
+        help="Minimum delay before each asset download (default: 1.5)",
     )
     parser.add_argument(
         "--page-delay",
         type=float,
-        default=0.5,
-        help="Delay in seconds between character pages (default: 0.5)",
+        default=5.0,
+        help="Minimum delay between character pages (default: 5.0)",
     )
     parser.add_argument(
         "--concurrency",
         type=int,
-        default=4,
-        help="Max concurrent asset downloads (default: 4)",
+        default=1,
+        help="Max concurrent asset downloads (default: 1)",
+    )
+    parser.add_argument(
+        "--max-retries",
+        type=int,
+        default=2,
+        help="Retries per failed character page (default: 2)",
+    )
+    parser.add_argument(
+        "--retry-base-delay",
+        type=float,
+        default=5.0,
+        help="Base exponential backoff for ordinary errors (default: 5.0)",
+    )
+    parser.add_argument(
+        "--rate-limit-delay",
+        type=float,
+        default=60.0,
+        help="Base exponential backoff for 403/429/567 responses (default: 60.0)",
+    )
+    parser.add_argument(
+        "--delay-jitter",
+        type=float,
+        default=0.25,
+        help="Random delay fraction added to waits (default: 0.25)",
+    )
+    parser.add_argument(
+        "--continue-on-rate-limit",
+        action="store_true",
+        help="Continue to later pages after persistent rate limiting (not recommended).",
     )
     parser.add_argument(
         "--asset-summary-output",
@@ -317,6 +346,11 @@ async def _run(args: argparse.Namespace) -> None:
             trust_existing_character_dirs=getattr(
                 args, "trust_existing_character_dirs", False
             ),
+            max_retries=getattr(args, "max_retries", 2),
+            retry_base_delay=getattr(args, "retry_base_delay", 5.0),
+            rate_limit_delay=getattr(args, "rate_limit_delay", 60.0),
+            delay_jitter=getattr(args, "delay_jitter", 0.25),
+            stop_on_rate_limit=not getattr(args, "continue_on_rate_limit", False),
         )
         if args.asset_summary_output:
             output_path = Path(args.asset_summary_output)
