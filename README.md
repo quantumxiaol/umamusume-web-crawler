@@ -8,6 +8,8 @@
 
 同时保留 Google 搜索能力，以及一套不再作为主流程推荐的视觉抓取方案。
 
+我之前试过crawl4ai ，把网站pdf 化，用markitdown、qwen2.5VL转markdown，做完发现效果还是不好，又看到他们开放了media API接口，发现前面的东西白做了。
+
 ## 当前定位
 
 当前代码的主线能力是：
@@ -19,13 +21,27 @@
   - umamusu.wiki：分类图片批量下载
 - Google 搜索
 
-不再作为主流程推荐的能力：
+## 使用
 
-- Crawl4AI 视觉抓取
-- PDF -> MarkItDown 路线
-- 通用网页直接抓取
+这个项目最早是为了我自己产出赛马娘同人小说/角色扮演提示词的agent工作流设计的，随着agent与skill的发展，那个项目已经没用了，普通人不可能开发一个强过codex、claude code的agent。
 
-这些能力仍然保留在代码里，但 README 将它们放在“历史方案 / 保留能力”里，不作为默认推荐用法。
+### 写小说
+
+```
+你有skills/umamusume-wiki-crawler/skill.md ，能够获取角色的wiki 资料。
+你需要根据用户构思的小说剧情，结合wiki查到的信息，写一篇完整的小说。
+```
+
+[生成小说实例](./result/Tachyon.md，Antigravity + Gemini 3.1 Pro生成。
+
+### 写角色扮演提示词
+
+```
+你有skills/umamusume-wiki-crawler/skill.md ，能够获取角色的wiki 资料。
+你需要根据用户提供的角色，在wiki查信息，写一份sillytavern 角色扮演所需要的提示词。
+```
+
+一些写好的[提示词](https://github.com/quantumxiaol/umamusume-agent/tree/main/characters)
 
 ## 能力矩阵
 
@@ -507,13 +523,3 @@ uv run pytest tests/test_cli_config.py
 python mcpserver.py --http -p 7777
 ```
 
-## 备注
-
-当前 README 以“代码现状”为准，而不是以早期探索方向为准。
-
-如果后续你把以下能力补进来，也应该同步更新矩阵：
-
-- 主 CLI 的 wiki 搜索入口
-- 主 CLI 的 `umamusu.wiki` 分类下载
-- MCP 的 Biligame 角色音频/图片下载
-- skill 的 Google 搜索或 Biligame 资源下载
