@@ -406,13 +406,25 @@ umamusume-crawler \
 
 ## 测试
 
+CI 使用显式测试列表，并按调用层次拆成三个独立 job：
+
+| CI job | 验证范围 | 是否联网 |
+| --- | --- | --- |
+| `Unit tests (offline)` | 解析、索引、配置、资源处理等确定性单元测试 | 否 |
+| `Crawler API (3 Wiki)` | 直接调用 Python API，验证三站标题搜索和页面抓取 | 是 |
+| `MCP Tool calls (3 Wiki)` | 启动 MCP HTTP 服务，通过原生 MCP 客户端发现并调用三站爬取 Tool | 是 |
+
+MCP 集成测试只有在 `RUN_MCP_INTEGRATION=1` 时执行。CI 会设置该变量；本地未启动 MCP 服务时默认跳过。
+
 部分相关测试：
 
 - `tests/test_biligame_assets.py`
 - `tests/test_biligame_crawler.py`
 - `tests/test_moegirl_crawler.py`
 - `tests/test_umamusu_wiki.py`
+- `tests/test_umamusu_wiki_crawler.py`
 - `tests/test_search_title.py`
+- `tests/test_mcp_wiki_tools.py`
 - `tests/test_mcp_tool_crawler_biligame.py`
 - `tests/test_mcp_tool_crawler_moegirl.py`
 - `tests/test_visual_capture_pdf.py`
@@ -431,3 +443,8 @@ uv run pytest tests/test_cli_config.py
 python mcpserver.py --http -p 7777
 ```
 
+另开终端运行三站 MCP Tool 集成测试：
+
+```bash
+RUN_MCP_INTEGRATION=1 uv run pytest tests/test_mcp_wiki_tools.py
+```

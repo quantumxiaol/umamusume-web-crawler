@@ -10,7 +10,6 @@ sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__f
 
 from umamusume_web_crawler.web.moegirl import (
     fetch_moegirl_wikitext_expanded,
-    search_moegirl_titles,
 )
 from umamusume_web_crawler.web.parse_wiki_infobox import (
     parse_wiki_page,
@@ -30,17 +29,9 @@ async def _run() -> None:
         "CRAWLER_MOEGIRL_URL",
         "https://mzh.moegirl.org.cn/东海帝王",
     )
-    keyword = os.getenv("CRAWLER_MOEGIRL_QUERY", "东海帝王")
     try:
-        titles = await search_moegirl_titles(keyword)
-        if titles:
-            print(f"Search results for {keyword!r}: {titles}")
-            target_title = titles[0]
-        else:
-            print(f"No search results for {keyword!r}, fallback to URL")
-            target_title = target_url
         content = await fetch_moegirl_wikitext_expanded(
-            target_title, max_depth=1, max_pages=5
+            target_url, max_depth=0, max_pages=1
         )
         output_name = "moegirl_api.md"
     except asyncio.TimeoutError:
@@ -49,7 +40,7 @@ async def _run() -> None:
     assert isinstance(content, str)
     assert content.strip(), "Expected non-empty crawl content"
     page = parse_wiki_page(content, site="moegirl")
-    heading = target_title if titles else _title_from_url(target_title)
+    heading = _title_from_url(target_url)
     content = wiki_page_to_llm_markdown(heading, page, site="moegirl")
     output_dir = Path("results") / "test"
     output_dir.mkdir(parents=True, exist_ok=True)

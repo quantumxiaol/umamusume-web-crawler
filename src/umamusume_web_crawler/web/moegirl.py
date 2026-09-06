@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 from umamusume_web_crawler.config import config
 
 
-DEFAULT_API_ENDPOINT = "https://zh.moegirl.org.cn/api.php"
+DEFAULT_API_ENDPOINT = "https://mzh.moegirl.org.cn/api.php"
 _TRANSCLUSION_PATTERN = re.compile(r"\{\{:\s*([^}|]+)")
 
 

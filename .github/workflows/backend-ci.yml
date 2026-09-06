@@ -1,19 +1,18 @@
-name: MCP Backend CI
+name: Crawler and MCP CI
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main]
   push:
-    branches: [ main ]
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
-  test:
+  unit-tests:
+    name: Unit tests (offline)
     runs-on: ubuntu-latest
-    env:
-      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
-      GOOGLE_CSE_ID: ${{ secrets.GOOGLE_CSE_ID }}
-
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,49 +20,87 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v2
 
-
-      - name: Install system dependencies (Xvfb)
-        run: |
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            sudo apt-get update
-            sudo apt-get install -y xvfb
-          fi
-
-      - name: Setup virtual environment
-        run: |
-          uv venv --python 3.12
-          source .venv/bin/activate
+      - name: Create Python 3.12 environment
+        run: uv venv --python 3.12
 
       - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run deterministic unit tests
         run: |
-          source .venv/bin/activate
-          uv sync
+          .venv/bin/pytest -q \
+            tests/test_biligame_assets.py \
+            tests/test_character_index.py \
+            tests/test_cli_config.py \
+            tests/test_mcp_config.py \
+            tests/test_umamusu_wiki.py
 
-      - name: Install Playwright browsers and deps
+  crawler-api:
+    name: Crawler API (3 Wiki)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Create Python 3.12 environment
+        run: uv venv --python 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Crawl pages directly through Python APIs
         run: |
-          source .venv/bin/activate
-          playwright install
-          playwright install-deps
+          .venv/bin/pytest -q \
+            tests/test_biligame_crawler.py \
+            tests/test_moegirl_crawler.py \
+            tests/test_umamusu_wiki_crawler.py
 
+      - name: Search titles directly through Python APIs
+        run: .venv/bin/pytest -q tests/test_search_title.py
 
-      - name: Start Web MCP service
+  mcp-tools:
+    name: MCP Tool calls (3 Wiki)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+
+      - name: Create Python 3.12 environment
+        run: uv venv --python 3.12
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Start MCP HTTP server
         run: |
-          source .venv/bin/activate
-          # --auto-servernum: 自动寻找空闲的显示端口
-          # --server-args: 设置屏幕分辨率，保证截图完整
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            nohup xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
-          else
-            nohup python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
-          fi
-          sleep 10
+          nohup .venv/bin/python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
 
-
-      - name: Run pytest
+      - name: Wait for MCP HTTP server
         run: |
-          source .venv/bin/activate
-          if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run --auto-servernum --server-args="-screen 0 1280x1024x24" pytest -q
-          else
-            pytest -q
-          fi
+          for attempt in {1..30}; do
+            if .venv/bin/python -c 'import socket; socket.create_connection(("127.0.0.1", 7777), timeout=1).close()'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat mcpserver.log
+          exit 1
+
+      - name: Invoke all three Wiki MCP crawler tools
+        env:
+          RUN_MCP_INTEGRATION: "1"
+          MCP_URL: http://127.0.0.1:7777/mcp/
+        run: .venv/bin/pytest -q tests/test_mcp_wiki_tools.py
+
+      - name: Upload MCP server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpserver-log
+          path: mcpserver.log
