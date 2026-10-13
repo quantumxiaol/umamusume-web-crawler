@@ -16,6 +16,10 @@
   `umamusu.wiki` 搜索、抓取、分类图片下载。
 - [src/umamusume_web_crawler/web/biligame_assets.py](src/umamusume_web_crawler/web/biligame_assets.py)
   Biligame 角色音频/图片批量下载。
+- [src/umamusume_web_crawler/web/biligame_chibi.py](../src/umamusume_web_crawler/web/biligame_chibi.py)
+  Biligame 互动小人 PNG 下载，区分游戏衣装与图片资源衣装，校验后写入并保存断点。
+- [src/umamusume_web_crawler/web/character_targets.py](../src/umamusume_web_crawler/web/character_targets.py)
+  两种 Biligame 下载流程共用的角色/衣装索引读取。
 - [src/umamusume_web_crawler/web/character_index.py](src/umamusume_web_crawler/web/character_index.py)
   官网角色名单与 Biligame 角色/衣装索引合并。
 - [src/umamusume_web_crawler/web/search.py](src/umamusume_web_crawler/web/search.py)
@@ -96,6 +100,33 @@ targets = load_asset_targets_from_json(
 
 - `results/voicedata/<English Name>/...`
 - `results/imagedata/characters/<English Name>/...`
+
+### Biligame 互动小人 PNG
+
+```python
+from umamusume_web_crawler.web.biligame_chibi import download_biligame_chibi
+
+summary = await download_biligame_chibi(
+    characters=["丸善斯基", "1003"],  # 省略则下载本地索引全部已实装角色
+    output_dir="results/biligame_chibi",
+    characters_json="umamusume_characters.json",
+    base_only=False,                # 默认包括换装，无需 include_variants
+    refresh_existing=False,
+    request_delay=5,                # 同主机实际请求间隔；页面/文件信息 API 与图片均适用
+    page_delay=10,                  # 衣装页之间的等待
+    use_proxy=False,
+    progress=print,                 # 可省略，库默认不打印
+)
+assert summary["pages_pending"] == 0, summary["errors"]
+```
+
+对应 CLI 为 `--task biligame-chibi`，用 `--chibi-output` 指定目录，`--character` 可重复；不需要 `--name`。完整命令和目录示例见 [README](../README.md#biligame-小人图片)。
+
+通过 `action=parse` 查找 Qchar 小人引用，再用 `imageinfo` 取得原始 PNG 地址和源文件版本。两种 API 请求均带项目 UA、JSON Accept 和同 Wiki Referer。HTTP 错误保留处理阶段、状态码及 `Server` / `EO-LOG-UUID` 等诊断头，供排查边缘拦截；不保存 Cookie。目录按 `角色ID_中文名/游戏衣装ID_衣装名/` 分组，原皮衣装名为 `原皮`；PNG 文件名保留页面引用的资源 ID。状态编号沿用 `0010`、`0011`，不解释为前后视角。
+
+输出根目录内的 `.chibi_manifest.json` 以 `角色ID:游戏衣装ID` 为键，记录 `is_base`、`page_title`、`source_page`、`resource_costume_id`；每张图保存相对路径、源文件标题/URL/版本哈希、本地 SHA-256、尺寸及格式。`complete` 表示当前衣装所有已发现图片下载成功且包含这两个状态；缺图/失败记作 `partial`。同一输出目录使用进程文件锁，防止并发覆盖下载记录。
+
+`pages_complete` 包含本次下载完成及已校验跳过的衣装；`pages_skipped` 表示无需访问站点的衣装。`images_downloaded`/`images_reused` 分别是本次下载与访问页面后复用的图片数；`pages_pending` 包括缺图、失败及限流停止后未处理的衣装。CLI 遇到未完成项返回退出码 `1`。常规重跑校验本地 SHA-256 并修复缺失/损坏文件；`refresh_existing=True` 绕过页面/API 缓存，对比源版本更新图片。断点按图片保存，失败不会覆盖已有有效 PNG。
 
 ### 3. umamusu.wiki 分类图片下载
 
