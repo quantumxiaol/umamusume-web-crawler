@@ -1,12 +1,14 @@
 # Umamusume Web Crawler
 
-围绕 3 个赛马娘 Wiki 的搜索、抓取与部分资源下载工具集：
+围绕赛马娘 Wiki 的正文提取、结构化档案和资源索引工具集：
 
 - `wiki.biligame.com/umamusume`
 - `mzh.moegirl.org.cn`
 - `umamusu.wiki`
+- `umamusume.wikiru.jp`（PukiWiki 公开正文）
+- `umapyoi.net`（JSON 档案与资源索引）
 
-同时保留 Google 搜索能力，以及一套不再作为主流程推荐的视觉抓取方案。
+Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也没有启用开关；skill 不调用 Google。视觉抓取方案继续保留。
 
 我之前试过crawl4ai ，把网站pdf 化，用markitdown、qwen2.5VL转markdown，做完发现效果还是不好，又看到他们开放了 MediaWiki API接口，发现前面的东西白做了。
 
@@ -14,12 +16,13 @@
 
 当前代码的主线能力是：
 
-- 三站 wiki 的标题搜索
-- 三站 wiki 的页面抓取与 Markdown 化
+- 四站 wiki 搜索与完整正文 Markdown（wikiru 搜索限角色索引，使用日文名）
+- 保留档案表、技能表、折叠台词及来源链接
+- Umapyoi 结构化档案、衣装/支援卡/图片索引
 - 部分资源下载
   - Biligame：角色音频/图片批量下载
   - umamusu.wiki：分类图片批量下载
-- Google 搜索
+- Google 搜索函数保留，可由 Python 手动调用
 
 ## 使用
 
@@ -50,13 +53,15 @@
 
 | 能力 | Python API | 主 CLI `umamusume-crawler` | MCP `umamusume-mcp` | Skill `skills/umamusume-wiki-crawler` |
 | :--- | :--- | :--- | :--- | :--- |
-| Google 搜索 | 有 | 无独立入口 | 有 | 无 |
+| Google 搜索 | 保留 | 无独立入口 | 不加载 | 无 |
 | Biligame 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
 | Moegirl 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
 | umamusu.wiki 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
 | Biligame 页面抓取 | 有 | 有 | 有 | 有 |
 | Moegirl 页面抓取 | 有 | 有 | 有 | 有 |
 | umamusu.wiki 页面抓取 | 有 | 有 | 有 | 有 |
+| wikiru 角色搜索/正文 | 有 | 正文 | 有 | 有 |
+| Umapyoi 搜索/档案/资源索引 | 有 | 有 | 有 | 有 |
 | 角色/衣装索引更新 | 有 | 有 | 无 | 无 |
 | Biligame 角色音频/图片下载 | 有 | 有 | 无 | 无 |
 | umamusu.wiki 分类图片下载 | 有 | 无 | 有 | 有 |
@@ -64,13 +69,10 @@
 
 补充说明：
 
-- 主 CLI 现在是三个任务：
-  - `--task page`：页面抓取
-  - `--task update-character-index`：合并官网角色表与 Biligame 衣装索引
-  - `--task biligame-assets`：Biligame 角色音频/图片下载
-- skill 目前只封装三站 wiki 搜索/抓取和 `umamusu.wiki` 分类图片下载，不包含 Google 搜索，也不包含 Biligame 角色资源下载。
-- MCP 目前包含 Google 搜索、三站 wiki 搜索/抓取、`umamusu.wiki` 分类图片下载，不包含 Biligame 角色资源下载。
-
+- 主 CLI 支持 `page`、`update-character-index`、`biligame-assets`，以及 `umapyoi-search`、`umapyoi-character`、`umapyoi-resources`。
+- MCP 和 skill 共用正文与工具逻辑，提供四站搜索/抓取、Umapyoi 补充资料及分类图片下载。
+- Bwiki/umamusu 正文使用 MediaWiki `action=parse`；萌娘使用公开 HTML，避免 `extracts` 丢失表格；wikiru 使用公开 PukiWiki HTML。
+- 正文不递归抓关联页，保留链接。旧 `max_depth` / `max_pages` 在 MCP/skill 中仅兼容接收，不再影响渲染正文。
 
 ## 安装与环境
 
@@ -86,35 +88,30 @@ playwright install
 - `GOOGLE_API_KEY`
 - `GOOGLE_CSE_ID`
 - `HTTP_PROXY` / `HTTPS_PROXY`
+- `USER_AGENT`（默认可识别的 `UmamusumeWebCrawler/1.0`）
 - `CRAWLER_TIMEOUT_S`
 - `CRAWLER_USER_DATA_DIR`
+- `CRAWLER_CACHE_DIR`（默认 `results/.http-cache`）
 
 说明：
 
 - `GOOGLE_API_KEY` / `GOOGLE_CSE_ID` 只在 Google 搜索相关能力中需要。
-- 三站 wiki 的 API 抓取本身不依赖 Google。
+- Wiki 与 Umapyoi 均不依赖 Google。默认请求使用项目 UA；同进程同主机串行，间隔至少 2 秒。正文缓存 1 小时，Umapyoi/日文角色索引缓存 24 小时；删除缓存文件可强制刷新。
+- `403/429/567` 明确报错并冷却，不自动切换到摘要或 Google。
 - `main.py` 与 `mcpserver.py` 会自动尝试加载当前目录 `.env`。
 - 作为 Python 库调用时，不会自动读取 `.env`，请自行 `load_dotenv()` 或直接传环境变量。
 
 ## 快速使用
 
 ```bash
-umamusume-crawler \
-  --url "https://wiki.biligame.com/umamusume/东海帝皇"
-[API-CRAWL] Fetching https://wiki.biligame.com/umamusume/东海帝皇 via MediaWiki API...
-Wrote 9994 chars to results/crawl.md
+umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇" --output results/teio.md
+umamusume-crawler --mode wikiru --url "トウカイテイオー" --output results/teio-ja.md
+umamusume-crawler --task umapyoi-search --keyword "Tokai Teio" --output -
+umamusume-crawler --task umapyoi-character --game-id 1003 --output results/teio-profile.json
+umamusume-crawler --task umapyoi-resources --game-id 1003 --output results/teio-resources.json
+umamusume-mcp --http -p 7777
 ```
 
-结果包含页面内容，模型可以使用。
+Umapyoi 使用 `game_id`，不是其数据库 `id`。缺失字段保持为空，资料带来源，不自动覆盖 Wiki 档案。资源链接标为未验证，不自动下载；支援卡索引可能包含其他主角色 ID 的团体卡。
 
-```
-赛马娘
-- **角色ID**: 1003
-- **ID**: 100301
-- **日文名**: トウカイテイオー
-- **中文名**: 东海帝皇
-- **昵称**: トップ・オブ・ジョイフル
-- **初始星级**: 3
-```
-
-使用说明的详情见[结构与使用](./docs/structure.md)
+使用说明见[结构与使用](./docs/structure.md)。

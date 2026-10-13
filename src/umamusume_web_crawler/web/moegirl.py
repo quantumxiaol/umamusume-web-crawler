@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import re
 from typing import Any, Dict
-from urllib.parse import parse_qs, quote, unquote, urlparse, urlencode
-from urllib.request import ProxyHandler, Request, build_opener
+from urllib.parse import quote, urlencode
 
 from bs4 import BeautifulSoup
 
-from umamusume_web_crawler.config import config
+from umamusume_web_crawler.web.http import request_json as _request_json
+from umamusume_web_crawler.web.wiki_urls import normalize_title
 
 
 DEFAULT_API_ENDPOINT = "https://mzh.moegirl.org.cn/api.php"
@@ -17,46 +16,13 @@ _TRANSCLUSION_PATTERN = re.compile(r"\{\{:\s*([^}|]+)")
 
 
 def _normalize_title(value: str) -> str:
-    if not value:
-        return ""
-    if value.startswith("http://") or value.startswith("https://"):
-        parsed = urlparse(value)
-        if parsed.path.endswith("/index.php"):
-            params = parse_qs(parsed.query)
-            title = params.get("title", [""])[0]
-        else:
-            title = unquote(parsed.path.strip("/").split("/")[-1])
-        return title.strip()
-    return value.strip()
+    return normalize_title(value, "moegirl")
 
 
 def _build_api_url(endpoint: str, params: Dict[str, str]) -> str:
     query = urlencode(params, quote_via=quote)
     return f"{endpoint}?{query}"
 
-
-def _build_opener(use_proxy: bool | None) -> object:
-    if use_proxy is False:
-        return build_opener(ProxyHandler({}))
-    proxy_url = config.proxy_url()
-    if not proxy_url:
-        return build_opener()
-    proxy_handler = ProxyHandler({"http": proxy_url, "https": proxy_url})
-    return build_opener(proxy_handler)
-
-
-def _request_json(
-    url: str, *, timeout_s: float, use_proxy: bool | None = None
-) -> Dict[str, Any]:
-    headers = {
-        "User-Agent": config.user_agent,
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    }
-    req = Request(url, headers=headers)
-    opener = _build_opener(use_proxy)
-    with opener.open(req, timeout=timeout_s) as resp:
-        payload = resp.read()
-    return json.loads(payload.decode("utf-8"))
 
 
 def _extract_page(payload: Dict[str, Any]) -> Dict[str, Any]:

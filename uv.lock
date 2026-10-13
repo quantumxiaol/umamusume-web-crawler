@@ -3316,10 +3316,12 @@ name = "umamusume-web-crawler"
 version = "0.2.0"
 source = { editable = "." }
 dependencies = [
+    { name = "beautifulsoup4" },
     { name = "crawl4ai" },
     { name = "google-api-python-client" },
     { name = "httplib2" },
     { name = "langchain-mcp-adapters" },
+    { name = "lxml" },
     { name = "markitdown", extra = ["all"] },
     { name = "mcp" },
     { name = "mcp-server" },
@@ -3332,10 +3334,12 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "beautifulsoup4", specifier = ">=4.12" },
     { name = "crawl4ai", specifier = ">=0.7.8" },
     { name = "google-api-python-client", specifier = ">=2.127.0" },
     { name = "httplib2", specifier = "==0.22.0" },
     { name = "langchain-mcp-adapters", specifier = ">=0.2.1" },
+    { name = "lxml", specifier = ">=5" },
     { name = "markitdown", extras = ["all"], specifier = ">=0.1.4" },
     { name = "mcp", specifier = ">=1.25.0" },
     { name = "mcp-server", specifier = ">=0.1.4" },

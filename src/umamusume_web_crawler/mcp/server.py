@@ -3,7 +3,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import sys
-from urllib.parse import parse_qs, quote, unquote, urlparse
 from collections.abc import AsyncIterator
 
 from dotenv import load_dotenv
@@ -18,227 +17,70 @@ from starlette.requests import Request
 from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
-from umamusume_web_crawler.web.biligame import (
-    fetch_biligame_wikitext_expanded,
-    search_biligame_titles,
-)
-from umamusume_web_crawler.web.moegirl import (
-    fetch_moegirl_wikitext_expanded,
-    search_moegirl_titles,
-)
-from umamusume_web_crawler.web.umamusu_wiki import (
-    DEFAULT_BASE_URL as _UMAMUSU_BASE_URL,
-    download_umamusu_category_images as _download_umamusu_category_images,
-    fetch_umamusu_wikitext_expanded,
-    search_umamusu_titles,
-)
-from umamusume_web_crawler.web.parse_wiki_infobox import (
-    parse_wiki_page,
-    wiki_page_to_llm_markdown,
-)
-from umamusume_web_crawler.web.search import (
-    google_search_page_urls,
-    google_search_urls,
-)
+from umamusume_web_crawler.config import config
+from umamusume_web_crawler.web.tools import crawl_wiki, search_wiki, umapyoi_tool
+from umamusume_web_crawler.web.umamusu_wiki import download_umamusu_category_images as _download_umamusu_category_images
 
 mcp = FastMCP("Umamusume Web MCP")
 
-_BILIGAME_BASE_URL = "https://wiki.biligame.com/umamusume/"
-_MOEGIRL_BASE_URL = "https://mzh.moegirl.org.cn/"
+@mcp.tool(description="Search biligame wiki titles.")
+async def biligame_wiki_search(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await search_wiki("biligame", keyword, limit=limit, use_proxy=use_proxy)
 
 
-def _title_from_url(value: str) -> str:
-    if not value.startswith("http://") and not value.startswith("https://"):
-        return value
-    parsed = urlparse(value)
-    if parsed.path.endswith("/index.php"):
-        params = parse_qs(parsed.query)
-        title = params.get("title", [""])[0]
-        if title:
-            return title
-    return unquote(parsed.path.strip("/").split("/")[-1])
+@mcp.tool(description="Read biligame rendered article body, preserving tables and folded dialogue. max_depth/max_pages are legacy no-ops.")
+async def crawl_biligame_wiki(url: str, max_depth: int = 1, max_pages: int = 5, use_proxy: bool | None = None) -> dict:
+    return await crawl_wiki("biligame", url, use_proxy=use_proxy, max_depth=max_depth, max_pages=max_pages)
 
 
-def _build_wiki_url(base_url: str, title: str) -> str:
-    return f"{base_url}{quote(title)}"
+@mcp.tool(description="Search moegirl wiki titles.")
+async def moegirl_wiki_search(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await search_wiki("moegirl", keyword, limit=limit, use_proxy=use_proxy)
 
 
-@mcp.tool(
-    description="""
-Performs a web search with Google for the given query and returns a list of URLs.
-Use this tool first to find pages about a character or topic.
-Returns up to 5 results ranked by relevance.
-
-Example queries:
-- "爱慕织姬 site:wiki.biligame.com/umamusume"
-- "爱慕织姬 site:mzh.moegirl.org.cn"
-"""
-)
-async def web_search_google(query: str) -> dict:
-    try:
-        results = google_search_urls(query, num=5)
-        return {
-            "results": [
-                {"url": item["url"], "priority": str(item["priority"])}
-                for item in results
-            ]
-        }
-    except Exception as exc:
-        return {"results": [], "error": str(exc)}
+@mcp.tool(description="Read moegirl rendered article body, preserving tables and folded dialogue. max_depth/max_pages are legacy no-ops.")
+async def crawl_moegirl_wiki(url: str, max_depth: int = 1, max_pages: int = 5, use_proxy: bool | None = None) -> dict:
+    return await crawl_wiki("moegirl", url, use_proxy=use_proxy, max_depth=max_depth, max_pages=max_pages)
 
 
-@mcp.tool(
-    description="""
-Search Biligame Wiki for a character name and return candidate wiki links.
-"""
-)
-async def biligame_wiki_seaech(
-    keyword: str, limit: int = 5, use_proxy: bool | None = None
-) -> dict:
-    try:
-        titles = await search_biligame_titles(
-            keyword, limit=limit, use_proxy=use_proxy
-        )
-        results = [
-            {
-                "title": title,
-                "url": _build_wiki_url(_BILIGAME_BASE_URL, title),
-                "priority": str(idx + 1),
-            }
-            for idx, title in enumerate(titles)
-        ]
-        return {"results": results}
-    except Exception as exc:
-        return {"results": [], "error": str(exc)}
+@mcp.tool(description="Search umamusu wiki titles.")
+async def umamusu_wiki_search(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await search_wiki("umamusu", keyword, limit=limit, use_proxy=use_proxy)
 
 
-@mcp.tool(
-    description="""
-Search Moegirl Wiki for a character name and return candidate wiki links.
-"""
-)
-async def moegirl_wiki_search(
-    keyword: str, limit: int = 5, use_proxy: bool | None = None
-) -> dict:
-    try:
-        titles = await search_moegirl_titles(
-            keyword, limit=limit, use_proxy=use_proxy
-        )
-        results = [
-            {
-                "title": title,
-                "url": _build_wiki_url(_MOEGIRL_BASE_URL, title),
-                "priority": str(idx + 1),
-            }
-            for idx, title in enumerate(titles)
-        ]
-        return {"results": results}
-    except Exception as exc:
-        return {"results": [], "error": str(exc)}
+@mcp.tool(description="Read umamusu rendered article body, preserving tables and folded dialogue. max_depth/max_pages are legacy no-ops.")
+async def crawl_umamusu_wiki(url: str, max_depth: int = 1, max_pages: int = 5, use_proxy: bool | None = None) -> dict:
+    return await crawl_wiki("umamusu", url, use_proxy=use_proxy, max_depth=max_depth, max_pages=max_pages)
 
 
-@mcp.tool(
-    description="""
-Search umamusu.wiki for a character/page title and return candidate wiki links.
-"""
-)
-async def umamusu_wiki_search(
-    keyword: str, limit: int = 5, use_proxy: bool | None = None
-) -> dict:
-    try:
-        titles = await search_umamusu_titles(keyword, limit=limit, use_proxy=use_proxy)
-        results = [
-            {
-                "title": title,
-                "url": _build_wiki_url(_UMAMUSU_BASE_URL, title),
-                "priority": str(idx + 1),
-            }
-            for idx, title in enumerate(titles)
-        ]
-        return {"results": results}
-    except Exception as exc:
-        return {"results": [], "error": str(exc)}
+@mcp.tool(description="Search wikiru character index by Japanese page name.")
+async def wikiru_wiki_search(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await search_wiki("wikiru", keyword, limit=limit, use_proxy=use_proxy)
 
 
-@mcp.tool(
-    description="""
-Crawl a Bilibili Wiki page via API and return the parsed Markdown output.
-Use this for wiki.biligame.com/umamusume pages. Supports optional transclusion expansion.
-"""
-)
-async def crawl_biligame_wiki(
-    url: str,
-    max_depth: int = 1,
-    max_pages: int = 5,
-    use_proxy: bool | None = None,
-) -> dict:
-    try:
-        wikitext = await fetch_biligame_wikitext_expanded(
-            url,
-            max_depth=max_depth,
-            max_pages=max_pages,
-            use_proxy=use_proxy,
-        )
-        page = parse_wiki_page(wikitext, site="biligame")
-        heading = _title_from_url(url)
-        markdown = wiki_page_to_llm_markdown(heading, page, site="biligame")
-        return {"status": "success", "result": markdown}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+@mcp.tool(description="Read wikiru rendered article body, preserving tables and folded dialogue. max_depth/max_pages are legacy no-ops.")
+async def crawl_wikiru_wiki(url: str, max_depth: int = 1, max_pages: int = 5, use_proxy: bool | None = None) -> dict:
+    return await crawl_wiki("wikiru", url, use_proxy=use_proxy, max_depth=max_depth, max_pages=max_pages)
 
 
-@mcp.tool(
-    description="""
-Crawl a Moegirl Wiki page via API and return the parsed Markdown output.
-Use this for mzh.moegirl.org.cn pages. Supports optional transclusion expansion.
-"""
-)
-async def crawl_moegirl_wiki(
-    url: str,
-    max_depth: int = 1,
-    max_pages: int = 5,
-    use_proxy: bool | None = None,
-) -> dict:
-    try:
-        wikitext = await fetch_moegirl_wikitext_expanded(
-            url,
-            max_depth=max_depth,
-            max_pages=max_pages,
-            use_proxy=use_proxy,
-        )
-        page = parse_wiki_page(wikitext, site="moegirl")
-        heading = _title_from_url(url)
-        markdown = wiki_page_to_llm_markdown(heading, page, site="moegirl")
-        return {"status": "success", "result": markdown}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+@mcp.tool(description="Compatibility alias for biligame_wiki_search.")
+async def biligame_wiki_seaech(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await biligame_wiki_search(keyword, limit, use_proxy)
 
 
-@mcp.tool(
-    description="""
-Crawl a umamusu.wiki page via MediaWiki API and return the parsed Markdown output.
-Use this for pages like List_of_Characters or character pages on umamusu.wiki.
-"""
-)
-async def crawl_umamusu_wiki(
-    url: str,
-    max_depth: int = 1,
-    max_pages: int = 5,
-    use_proxy: bool | None = None,
-) -> dict:
-    try:
-        wikitext = await fetch_umamusu_wikitext_expanded(
-            url,
-            max_depth=max_depth,
-            max_pages=max_pages,
-            use_proxy=use_proxy,
-        )
-        page = parse_wiki_page(wikitext, site="umamusu")
-        heading = _title_from_url(url)
-        markdown = wiki_page_to_llm_markdown(heading, page, site="umamusu")
-        return {"status": "success", "result": markdown}
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+@mcp.tool(description="Search Umapyoi structured profiles by Japanese/English name or game_id. Chinese aliases are not supported.")
+async def umapyoi_character_search(keyword: str, limit: int = 5, use_proxy: bool | None = None) -> dict:
+    return await umapyoi_tool("search", keyword=keyword, limit=limit, use_proxy=use_proxy)
+
+
+@mcp.tool(description="Read a supplemental structured character profile. Use game_id, not database id; null fields are preserved.")
+async def get_umapyoi_character(game_id: int, use_proxy: bool | None = None) -> dict:
+    return await umapyoi_tool("character", game_id=game_id, use_proxy=use_proxy)
+
+
+@mcp.tool(description="Read outfit, support card and image indices. URLs are unverified; no media are downloaded.")
+async def get_umapyoi_resources(game_id: int, use_proxy: bool | None = None) -> dict:
+    return await umapyoi_tool("resources", game_id=game_id, use_proxy=use_proxy)
 
 
 @mcp.tool(
@@ -271,27 +113,6 @@ async def download_umamusu_category_images(
         }
     except Exception as exc:
         return {"status": "error", "message": str(exc)}
-
-
-@mcp.tool(
-    description="""
-Fetch Google search result page HTML and extract result links.
-Use this when Google API is unavailable and you need simple link extraction.
-"""
-)
-async def crawl_google_page(
-    query: str, num: int = 5, use_proxy: bool | None = None
-) -> dict:
-    try:
-        results = google_search_page_urls(query, num=num, use_proxy=use_proxy)
-        return {
-            "results": [
-                {"url": item["url"], "priority": str(item["priority"])}
-                for item in results
-            ]
-        }
-    except Exception as exc:
-        return {"results": [], "error": str(exc)}
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
@@ -342,6 +163,7 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
 
 def main() -> None:
     load_dotenv()
+    config.update_from_env()
     parser = argparse.ArgumentParser(description="Run Umamusume Web MCP server")
     parser.add_argument("--http", action="store_true", help="Use StreamableHTTP + SSE")
     parser.add_argument("--sse", action="store_true", help="Alias for --http")

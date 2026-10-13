@@ -6,6 +6,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_GOOGLE_INTEGRATION") != "1",
+    reason="Google is disabled by default; set RUN_GOOGLE_INTEGRATION=1 explicitly",
+)
+
+
 sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
 
 from umamusume_web_crawler.config import config

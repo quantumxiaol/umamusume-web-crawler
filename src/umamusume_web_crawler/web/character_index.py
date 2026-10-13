@@ -7,12 +7,14 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
-from urllib.request import ProxyHandler, Request, build_opener
+from urllib.request import Request
 
 from bs4 import BeautifulSoup, Tag
 
 from umamusume_web_crawler.config import config
 from umamusume_web_crawler.web.biligame import fetch_biligame_html
+from umamusume_web_crawler.web.http import BROWSER_USER_AGENT
+from umamusume_web_crawler.web.http import build_http_opener as _build_opener
 
 
 BILIGAME_INDEX_TITLE = "赛马娘一览"
@@ -28,11 +30,6 @@ _ICON_PATTERN = re.compile(r"^Chr icon (\d+) (\d+) 01\.png$")
 _COSTUME_PREFIX_PATTERN = re.compile(r"^[【〖][^】〗]+[】〗]\s*")
 _KANA_PATTERN = re.compile(r"[\u3040-\u30ff]")
 _CJK_PATTERN = re.compile(r"[\u3400-\u9fff]")
-_REAL_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36"
-)
 
 
 def normalize_name(value: str) -> str:
@@ -179,20 +176,11 @@ def load_name_overrides(path: str | Path | None) -> dict[str, str]:
     return {str(cn): str(en) for cn, en in data.items() if cn and en}
 
 
-def _build_opener(use_proxy: bool | None) -> object:
-    if use_proxy is False:
-        return build_opener(ProxyHandler({}))
-    proxy_url = config.proxy_url()
-    if not proxy_url:
-        return build_opener()
-    return build_opener(ProxyHandler({"http": proxy_url, "https": proxy_url}))
-
-
 def _request_text(url: str, *, timeout_s: float, use_proxy: bool | None) -> str:
     request = Request(
         url,
         headers={
-            "User-Agent": config.user_agent or _REAL_USER_AGENT,
+            "User-Agent": config.user_agent or BROWSER_USER_AGENT,
             "Accept-Language": "ja,en;q=0.9,zh-CN;q=0.8",
         },
     )

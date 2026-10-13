@@ -1,59 +1,25 @@
+"""Live source smoke test; use the offline suite for deterministic verification."""
 import asyncio
 import os
-import sys
 from pathlib import Path
-from urllib.parse import unquote, urlparse
-
 import pytest
+from umamusume_web_crawler.web.wiki_pages import fetch_wiki_page
 
-sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "src"))
-
-from umamusume_web_crawler.web.parse_wiki_infobox import (
-    parse_wiki_page,
-    wiki_page_to_llm_markdown,
-)
-from umamusume_web_crawler.web.umamusu_wiki import (
-    fetch_umamusu_wikitext_expanded,
-)
-
-
-def _title_from_url(value: str) -> str:
-    if not value.startswith("http://") and not value.startswith("https://"):
-        return value
-    parsed = urlparse(value)
-    return unquote(parsed.path.strip("/").split("/")[-1])
-
-
-async def _run() -> None:
-    target_url = os.getenv(
-        "CRAWLER_UMAMUSU_URL",
-        "https://umamusu.wiki/Tokai_Teio",
-    )
-    try:
-        content = await fetch_umamusu_wikitext_expanded(
-            target_url, max_depth=0, max_pages=1
-        )
-        output_name = "umamusu_api.md"
-    except asyncio.TimeoutError:
-        print("TEST_RESULT: FAILED (timeout)")
-        raise
-    assert isinstance(content, str)
-    assert content.strip(), "Expected non-empty crawl content"
-    page = parse_wiki_page(content, site="umamusu")
-    heading = _title_from_url(target_url)
-    content = wiki_page_to_llm_markdown(heading, page, site="umamusu")
-    output_dir = Path("results") / "test"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / output_name
-    output_path.write_text(content, encoding="utf-8")
-    print(f"Wrote {len(content)} chars to {output_path}")
-    print("TEST_RESULT: PASSED")
-
+async def _run():
+    url = os.getenv("CRAWLER_UMAMUSU_URL", "https://umamusu.wiki/Tokai_Teio")
+    page = await fetch_wiki_page(url, site="umamusu")
+    assert page["source_format"] == "rendered_html"
+    assert len(page["markdown"]) > 1000
+    if url == "https://umamusu.wiki/Tokai_Teio":
+        assert page["infobox"]
+        assert "150" in str(page["infobox"])
+    output = Path("results/test/umamusu_complete.md")
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(page["markdown"], encoding="utf-8")
 
 @pytest.mark.asyncio
-async def test_umamusu_wiki_crawler() -> None:
+async def test_umamusu_complete_body():
     await _run()
-
 
 if __name__ == "__main__":
     asyncio.run(_run())

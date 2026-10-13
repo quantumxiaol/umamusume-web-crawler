@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 from urllib.parse import unquote, urlparse
-from urllib.request import ProxyHandler, Request, build_opener
+from urllib.request import Request
 
 from bs4 import BeautifulSoup, Tag
 from crawl4ai import AsyncWebCrawler
@@ -16,6 +16,8 @@ from crawl4ai.async_configs import BrowserConfig, CrawlerRunConfig, ProxyConfig
 
 from umamusume_web_crawler.config import config
 from umamusume_web_crawler.web.crawler import SingleProxyRotationStrategy
+from umamusume_web_crawler.web.http import BROWSER_USER_AGENT
+from umamusume_web_crawler.web.http import build_http_opener as _build_opener
 
 
 BASE_URL = "https://wiki.biligame.com/umamusume/"
@@ -24,11 +26,6 @@ DEFAULT_IMAGE_OUTPUT_ROOT = "results/imagedata/characters"
 DEFAULT_CHARACTERS_JSON = "umamusume_characters.json"
 DEFAULT_ASSET_MANIFEST = ".biligame_asset_manifest.json"
 IMAGE_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
-_REAL_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36"
-)
 _RATE_LIMIT_PATTERN = re.compile(
     r"(?:http(?: error| status)?\s*)?(?:403|429|567)|"
     r"too many requests|rate.?limit",
@@ -57,16 +54,6 @@ def is_rate_limit_error(exc: BaseException) -> bool:
     return bool(_RATE_LIMIT_PATTERN.search(str(exc)))
 
 
-def _build_opener(use_proxy: bool | None) -> object:
-    if use_proxy is False:
-        return build_opener(ProxyHandler({}))
-    proxy_url = config.proxy_url()
-    if not proxy_url:
-        return build_opener()
-    proxy_handler = ProxyHandler({"http": proxy_url, "https": proxy_url})
-    return build_opener(proxy_handler)
-
-
 def _download_bytes(
     url: str,
     *,
@@ -75,7 +62,7 @@ def _download_bytes(
     use_proxy: bool | None,
 ) -> bytes:
     headers = {
-        "User-Agent": config.user_agent or _REAL_USER_AGENT,
+        "User-Agent": config.user_agent or BROWSER_USER_AGENT,
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": referer,
     }
@@ -502,13 +489,13 @@ async def save_asset_manifest(path: str | Path, manifest: dict[str, Any]) -> Non
 
 def _build_browser_config() -> BrowserConfig:
     headers = {
-        "User-Agent": _REAL_USER_AGENT,
+        "User-Agent": BROWSER_USER_AGENT,
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://www.google.com/",
     }
     return BrowserConfig(
         headless=True,
-        user_agent=_REAL_USER_AGENT,
+        user_agent=BROWSER_USER_AGENT,
         viewport_width=1600,
         viewport_height=900,
         headers=headers,

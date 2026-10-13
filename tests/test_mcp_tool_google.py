@@ -21,6 +21,12 @@ from mcp.client.streamable_http import streamable_http_client
 
 load_dotenv()
 
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_GOOGLE_INTEGRATION") != "1",
+    reason="Google is disabled by default; set RUN_GOOGLE_INTEGRATION=1 explicitly",
+)
+
+
 
 def parse_tool_args(args_str_list: list) -> Dict[str, Any]:
     """

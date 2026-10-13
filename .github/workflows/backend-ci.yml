@@ -29,6 +29,9 @@ jobs:
       - name: Run deterministic unit tests
         run: |
           .venv/bin/pytest -q \
+            tests/test_http.py \
+            tests/test_wiki_content.py \
+            tests/test_umapyoi.py \
             tests/test_biligame_assets.py \
             tests/test_character_index.py \
             tests/test_cli_config.py \
@@ -36,7 +39,7 @@ jobs:
             tests/test_umamusu_wiki.py
 
   crawler-api:
-    name: Crawler API (3 Wiki)
+    name: Source clients (4 Wiki + Umapyoi)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -61,8 +64,13 @@ jobs:
       - name: Search titles directly through Python APIs
         run: .venv/bin/pytest -q tests/test_search_title.py
 
+      - name: Query wikiru and Umapyoi public sources
+        env:
+          RUN_SOURCE_INTEGRATION: "1"
+        run: .venv/bin/pytest -q tests/test_supplemental_sources.py
+
   mcp-tools:
-    name: MCP Tool calls (3 Wiki)
+    name: MCP Tool calls (4 Wiki + Umapyoi)
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -92,7 +100,7 @@ jobs:
           cat mcpserver.log
           exit 1
 
-      - name: Invoke all three Wiki MCP crawler tools
+      - name: Invoke all four Wiki and Umapyoi MCP tools
         env:
           RUN_MCP_INTEGRATION: "1"
           MCP_URL: http://127.0.0.1:7777/mcp/

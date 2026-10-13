@@ -17,6 +17,7 @@ from crawl4ai.content_filter_strategy import PruningContentFilter
 from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
 
 from umamusume_web_crawler.config import config
+from umamusume_web_crawler.web.http import BROWSER_USER_AGENT
 
 
 class SingleProxyRotationStrategy:
@@ -77,12 +78,6 @@ _MD_OPTIONS = {
 }
 
 _md_generator = DefaultMarkdownGenerator(options=_MD_OPTIONS)
-
-_REAL_USER_AGENT = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36"
-)
 
 _STEALTH_JS = (
     "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
@@ -712,7 +707,7 @@ def _build_run_config(
         remove_overlay_elements=True,
         magic=True,
         scan_full_page=True,
-        user_agent=_REAL_USER_AGENT,
+        user_agent=BROWSER_USER_AGENT,
         simulate_user=anti_bot,
         override_navigator=anti_bot,
     )
@@ -822,14 +817,14 @@ async def _crawl_with_config(
     source_url = source_url or url
     timeout_s = _resolve_timeout(timeout_s)
     headers = {
-        "User-Agent": _REAL_USER_AGENT,
+        "User-Agent": BROWSER_USER_AGENT,
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://www.google.com/",
     }
     user_data_dir = _resolve_user_data_dir()
     browser_cfg = BrowserConfig(
         headless=headless,
-        user_agent=_REAL_USER_AGENT,
+        user_agent=BROWSER_USER_AGENT,
         viewport_width=1920,
         viewport_height=1080,
         headers=headers,
@@ -981,14 +976,14 @@ async def _crawl_page_visual(
     pdf_path = output_dir / f"{slug}.pdf" if capture_pdf else None
 
     headers = {
-        "User-Agent": _REAL_USER_AGENT,
+        "User-Agent": BROWSER_USER_AGENT,
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
         "Referer": "https://www.google.com/",
     }
     user_data_dir = _resolve_user_data_dir()
     browser_cfg = BrowserConfig(
         headless=headless,
-        user_agent=_REAL_USER_AGENT,
+        user_agent=BROWSER_USER_AGENT,
         viewport_width=1920,
         viewport_height=1080,
         headers=headers,

@@ -4,7 +4,6 @@ import argparse
 import asyncio
 import json
 from pathlib import Path
-from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 
@@ -18,7 +17,6 @@ from umamusume_web_crawler.web.crawler import (
     crawl_page,
     crawl_page_visual_markitdown,
 )
-from umamusume_web_crawler.web.biligame import fetch_biligame_wikitext_expanded
 from umamusume_web_crawler.web.biligame_assets import (
     CharacterAssetTarget,
     DEFAULT_AUDIO_OUTPUT_ROOT,
@@ -31,59 +29,22 @@ from umamusume_web_crawler.web.character_index import (
     DEFAULT_NAME_OVERRIDES,
     update_character_index,
 )
-from umamusume_web_crawler.web.moegirl import fetch_moegirl_wikitext_expanded
-from umamusume_web_crawler.web.umamusu_wiki import fetch_umamusu_wikitext_expanded
-from umamusume_web_crawler.web.parse_wiki_infobox import (
-    parse_wiki_page,
-    wiki_page_to_llm_markdown,
+from umamusume_web_crawler.web.wiki_pages import fetch_wiki_page
+from umamusume_web_crawler.web.wiki_urls import detect_site
+from umamusume_web_crawler.web.umapyoi import (
+    search_umapyoi_characters, fetch_umapyoi_character, fetch_umapyoi_resources,
 )
 
 
 def _detect_mode(url: str) -> str:
-    host = urlparse(url).netloc.lower()
-    if "wiki.biligame.com" in host:
-        return "biligame"
-    if "moegirl.org.cn" in host:
-        return "moegirl"
-    if "umamusu.wiki" in host:
-        return "umamusu"
-    return "generic"
-
-
-def _title_from_url(value: str) -> str:
-    if not value.startswith("http://") and not value.startswith("https://"):
-        return value
-    parsed = urlparse(value)
-    if parsed.path.endswith("/index.php"):
-        params = urlparse(value).query
-        # simple parse
-        if "title=" in params:
-            import urllib.parse
-            q = urllib.parse.parse_qs(params)
-            return q.get("title", [""])[0] or "page"
-    return Path(parsed.path).name or "page"
+    try:
+        return detect_site(url)
+    except ValueError:
+        return "generic"
 
 
 async def _run_api_crawl(url: str, site: str, use_proxy: bool | None) -> str:
-    print(f"[API-CRAWL] Fetching {url} via MediaWiki API...")
-    if site == "biligame":
-        wikitext = await fetch_biligame_wikitext_expanded(
-            url, max_depth=1, max_pages=5, use_proxy=use_proxy
-        )
-    elif site == "moegirl":
-        wikitext = await fetch_moegirl_wikitext_expanded(
-            url, max_depth=1, max_pages=5, use_proxy=use_proxy
-        )
-    elif site == "umamusu":
-        wikitext = await fetch_umamusu_wikitext_expanded(
-            url, max_depth=1, max_pages=5, use_proxy=use_proxy
-        )
-    else:
-        raise ValueError(f"Unsupported API site: {site}")
-
-    page = parse_wiki_page(wikitext, site=site)
-    heading = _title_from_url(url)
-    return wiki_page_to_llm_markdown(heading, page, site=site)
+    return (await fetch_wiki_page(url, site=site, use_proxy=use_proxy))["markdown"]
 
 
 def _proxy_flag(value: bool | None, *, default: bool) -> bool:
@@ -107,14 +68,16 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Umamusume crawler CLI")
     parser.add_argument(
         "--task",
-        choices=("page", "biligame-assets", "update-character-index"),
+        choices=("page", "biligame-assets", "update-character-index", "umapyoi-search", "umapyoi-character", "umapyoi-resources"),
         default="page",
         help="Task to run (default: page)",
     )
-    parser.add_argument("--url", help="Target URL to crawl")
+    parser.add_argument("--url", help="Target URL or wiki title (use --mode with a title)")
+    parser.add_argument("--keyword", help="Umapyoi Japanese/English search keyword")
+    parser.add_argument("--game-id", type=int, help="Umapyoi game_id (not database id)")
     parser.add_argument(
         "--mode",
-        choices=("auto", "biligame", "moegirl", "umamusu", "generic"),
+        choices=("auto", "biligame", "moegirl", "umamusu", "wikiru", "generic"),
         default="auto",
         help="Crawl mode (default: auto)",
     )
@@ -126,7 +89,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         default="results/crawl.md",
-        help="Output markdown path (use '-' for stdout)",
+        help="Output Markdown or Umapyoi JSON path (use '-' for stdout)",
     )
     parser.add_argument(
         "--visual-dir",
@@ -362,6 +325,19 @@ async def _run(args: argparse.Namespace) -> None:
             print(f"Wrote asset summary to {output_path}")
         return
 
+    if args.task.startswith("umapyoi-"):
+        if args.task == "umapyoi-search":
+            if not args.keyword:
+                raise SystemExit("--keyword is required for umapyoi-search.")
+            payload = await search_umapyoi_characters(args.keyword, use_proxy=use_proxy)
+        else:
+            if not args.game_id:
+                raise SystemExit("--game-id is required for Umapyoi profiles/resources.")
+            fetch = fetch_umapyoi_character if args.task == "umapyoi-character" else fetch_umapyoi_resources
+            payload = await fetch(args.game_id, use_proxy=use_proxy)
+        _write_output(json.dumps(payload, ensure_ascii=False, indent=2), args.output)
+        return
+
     if not args.url:
         raise SystemExit("--url is required when --task page.")
 
@@ -399,24 +375,20 @@ async def _run(args: argparse.Namespace) -> None:
                 capture_pdf=capture_pdf,
             )
     else:
-        # Default to API for supported sites if not in visual mode
-        if mode == "biligame":
-             content = await _run_api_crawl(args.url, "biligame", use_proxy)
-        elif mode == "moegirl":
-             content = await _run_api_crawl(args.url, "moegirl", use_proxy)
-        elif mode == "umamusu":
-             content = await _run_api_crawl(args.url, "umamusu", use_proxy)
+        if mode in {"biligame", "moegirl", "umamusu", "wikiru"}:
+            content = await _run_api_crawl(args.url, mode, use_proxy)
         else:
-             # Fallback to headless browser for generic pages
-             content = await crawl_page(
-                args.url, use_proxy=_proxy_flag(use_proxy, default=False)
-            )
+            content = await crawl_page(args.url, use_proxy=_proxy_flag(use_proxy, default=False))
 
-    if args.output == "-":
+    _write_output(content, args.output)
+
+
+def _write_output(content: str, output: str) -> None:
+    if output == "-":
         print(content)
         return
 
-    output_path = Path(args.output)
+    output_path = Path(output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(content, encoding="utf-8")
     print(f"Wrote {len(content)} chars to {output_path}")
@@ -424,6 +396,7 @@ async def _run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     load_dotenv()
+    config.update_from_env()
     args = parse_args()
 
     overrides = {}

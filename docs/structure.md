@@ -5,7 +5,7 @@
 核心文件：
 
 - [src/umamusume_web_crawler/cli.py](src/umamusume_web_crawler/cli.py)
-  主 CLI 入口。支持页面抓取、角色索引更新和 `biligame-assets`。
+  主 CLI 入口。支持正文、角色索引、资源下载与 Umapyoi JSON 输出。
 - [src/umamusume_web_crawler/mcp/server.py](src/umamusume_web_crawler/mcp/server.py)
   MCP 服务与工具定义。
 - [src/umamusume_web_crawler/web/biligame.py](src/umamusume_web_crawler/web/biligame.py)
@@ -25,6 +25,8 @@
 - [skills/umamusume-wiki-crawler/scripts/crawl.py](skills/umamusume-wiki-crawler/scripts/crawl.py)
   skill 使用的 CLI 包装器。
 
+正文主路径：`wiki_pages.py` 选择来源 → `html_content.py` 保留表格/台词 → `web/tools.py` 组装统一结果，MCP 与 skill 只做入口适配。`http.py` 共享代理、项目 UA、磁盘缓存、按主机串行限速与错误处理。`wikiru.py` 读取 PukiWiki，`umapyoi.py` 读取 JSON API。原有 raw/extracts 函数仍保留，默认正文入口不再使用它们。
+
 包装入口：
 
 - `python main.py`
@@ -34,37 +36,35 @@
 
 ## Python API
 
-### 1. 三站 wiki 搜索与抓取
+### 1. 四站 wiki 搜索与正文
 
 ```python
-from umamusume_web_crawler.web.biligame import (
-    search_biligame_titles,
-    fetch_biligame_wikitext_expanded,
-)
-from umamusume_web_crawler.web.moegirl import (
-    search_moegirl_titles,
-    fetch_moegirl_wikitext_expanded,
-)
-from umamusume_web_crawler.web.umamusu_wiki import (
-    search_umamusu_titles,
-    fetch_umamusu_wikitext_expanded,
-)
-from umamusume_web_crawler.web.parse_wiki_infobox import (
-    parse_wiki_page,
-    wiki_page_to_llm_markdown,
-)
+from umamusume_web_crawler.web.tools import search_wiki
+from umamusume_web_crawler.web.wiki_pages import fetch_wiki_page
 
-titles = await search_biligame_titles("东海帝皇")
-target = titles[0]
-wikitext = await fetch_biligame_wikitext_expanded(target, max_depth=1, max_pages=5)
-page = parse_wiki_page(wikitext, site="biligame")
-markdown = wiki_page_to_llm_markdown(target, page, site="biligame")
+matches = await search_wiki("biligame", "东海帝皇")
+page = await fetch_wiki_page(matches["results"][0]["url"])
+markdown = page["markdown"]
+infobox = page["infobox"]
+ja_page = await fetch_wiki_page("トウカイテイオー", site="wikiru")
 ```
 
-同理可替换为：
+`site` 支持 `biligame`、`moegirl`、`umamusu`、`wikiru`。Bwiki/umamusu 通过 MediaWiki `action=parse` 获取已展开模板的 HTML；萌娘通过公开页面保留 `extracts` 会省略的表格；wikiru 通过公开 HTML 保留折叠台词，去除评论区。台词所在关联子页仍需单独读取。
 
-- `search_moegirl_titles` + `fetch_moegirl_wikitext_expanded`
-- `search_umamusu_titles` + `fetch_umamusu_wikitext_expanded`
+`infobox` 是常见档案字段的便捷提取，不覆盖所有站点字段；Markdown 保留正文表格。URL 解析保留子页面路径，wikiru 使用 `?日文标题`，不能拼成 `?title=...`。
+
+### Umapyoi 补充数据
+
+```python
+from umamusume_web_crawler.web.umapyoi import (
+    search_umapyoi_characters, fetch_umapyoi_character, fetch_umapyoi_resources,
+)
+results = await search_umapyoi_characters("Tokai Teio")
+profile = await fetch_umapyoi_character(1003)
+resources = await fetch_umapyoi_resources(1003)
+```
+
+档案保留 `null` 与 `missing_fields`，使用 `game_id`，保留来源；不自动合并或覆盖 Wiki。搜索支持日文/英文名和游戏 ID，没有中文别名映射。资源返回衣装、支援卡、图片分组及档案内资源 URL。团体支援卡的主 `chara_id` 可能属于其他成员；按接口归属保留。URL 可失效，统一标记 `unverified`，不下载文件。某资源接口失败时返回 `partial: true` 和 `errors`，不把失败误判为零条数据。
 
 ### 2. Biligame 角色音频/图片下载
 
@@ -110,7 +110,7 @@ downloads = await download_umamusu_category_images(
 )
 ```
 
-### 4. Google 搜索
+### 4. Google 搜索（保留代码，默认关闭）
 
 ```python
 from umamusume_web_crawler.web.search import (
@@ -140,7 +140,7 @@ python main.py ...
 
 ### 1. 页面抓取
 
-默认任务是 `--task page`，用于三站 wiki 页面抓取。
+默认任务是 `--task page`，用于四站 wiki 正文抓取。
 
 示例：
 
@@ -165,9 +165,18 @@ umamusume-crawler \
 相关参数：
 
 - `--url`
-- `--mode auto|biligame|moegirl|umamusu|generic`
+- `--mode auto|biligame|moegirl|umamusu|wikiru|generic`
 - `--output`
 - `--use-proxy` / `--no-proxy`
+
+### Umapyoi 与日文正文命令
+
+```bash
+umamusume-crawler --mode wikiru --url "トウカイテイオー" --output results/teio-ja.md
+umamusume-crawler --task umapyoi-search --keyword "Tokai Teio" --output -
+umamusume-crawler --task umapyoi-character --game-id 1003 --output results/teio-profile.json
+umamusume-crawler --task umapyoi-resources --game-id 1003 --output results/teio-resources.json
+```
 
 ### 2. 更新角色/衣装索引
 
@@ -268,7 +277,7 @@ umamusume-crawler \
 
 当前主 CLI 没有独立子命令去做：
 
-- 三站 wiki 标题搜索
+- 四站 wiki 标题搜索
 - Google 搜索
 - `umamusu.wiki` 分类图片下载
 
@@ -286,21 +295,25 @@ python mcpserver.py --http -p 7777
 
 当前 MCP 工具：
 
-- `web_search_google(query)`
-- `crawl_google_page(query, num?, use_proxy?)`
-- `biligame_wiki_seaech(keyword, limit?, use_proxy?)`
+- `biligame_wiki_search(keyword, limit?, use_proxy?)`（旧拼写 `biligame_wiki_seaech` 保留兼容）
 - `moegirl_wiki_search(keyword, limit?, use_proxy?)`
 - `umamusu_wiki_search(keyword, limit?, use_proxy?)`
 - `crawl_biligame_wiki(url, max_depth?, max_pages?, use_proxy?)`
 - `crawl_moegirl_wiki(url, max_depth?, max_pages?, use_proxy?)`
 - `crawl_umamusu_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `wikiru_wiki_search(keyword, limit?, use_proxy?)`
+- `crawl_wikiru_wiki(url, max_depth?, max_pages?, use_proxy?)`
+- `umapyoi_character_search(keyword, limit?, use_proxy?)`
+- `get_umapyoi_character(game_id, use_proxy?)`
+- `get_umapyoi_resources(game_id, use_proxy?)`
 - `download_umamusu_category_images(category, output_dir?, max_files?, delay_s?, use_proxy?)`
 
 说明：
 
 - MCP 目前不暴露 Biligame 角色音频/图片下载。
 - MCP 目前不暴露视觉抓取。
-- `biligame_wiki_seaech` 保留了当前代码中的拼写，调用时需要按这个名字写。
+- 保留 `web_search_google` / `crawl_google_page` 函数代码，MCP server 不导入、不注册，没有启用开关；skill 不调用 Google。
+- 正文工具返回 `status`、Markdown `result`、`infobox`、`source_url`、`source_format` 和 `transport`；失败返回错误，旧 `max_depth/max_pages` 仅兼容接收。
 
 调用示例：
 
@@ -336,6 +349,8 @@ uv run python skills/umamusume-wiki-crawler/scripts/crawl.py <tool> [args]
 - `crawl_biligame_wiki`
 - `crawl_moegirl_wiki`
 - `crawl_umamusu_wiki`
+- `wikiru_wiki_search` / `crawl_wikiru_wiki`
+- `umapyoi_character_search` / `get_umapyoi_character` / `get_umapyoi_resources`
 - `download_umamusu_category_images`
 
 说明：
@@ -362,7 +377,7 @@ uv run python skills/umamusume-wiki-crawler/scripts/crawl.py \
 
 当前推荐使用顺序：
 
-1. 三站 wiki 内容查询：优先走 MediaWiki API 搜索 + 抓取
+1. Wiki 查询：使用统一正文入口，保留来源渲染出的表格与台词
 2. Biligame 角色资源：走 `biligame-assets`
 3. `umamusu.wiki` 分类资源：走分类图片下载
 4. 只有在 API 路径不满足时，才考虑视觉抓取
@@ -372,6 +387,8 @@ uv run python skills/umamusume-wiki-crawler/scripts/crawl.py \
 - 游戏数值、技能、支援卡、育成事件：Biligame
 - 背景、梗、人物经历、历史原型：Moegirl
 - 英文社区整理页、总表、分类图库：umamusu.wiki
+- 日文档案、台词与条件：wikiru（按日文名搜索角色索引）
+- 结构化档案、衣装/支援卡/图片索引补充：Umapyoi
 
 ## 历史方案 / 保留能力
 
@@ -411,12 +428,19 @@ CI 使用显式测试列表，并按调用层次拆成三个独立 job：
 | CI job | 验证范围 | 是否联网 |
 | --- | --- | --- |
 | `Unit tests (offline)` | 解析、索引、配置、资源处理等确定性单元测试 | 否 |
-| `Crawler API (3 Wiki)` | 直接调用 Python API，验证三站标题搜索和页面抓取 | 是 |
-| `MCP Tool calls (3 Wiki)` | 启动 MCP HTTP 服务，通过原生 MCP 客户端发现并调用三站爬取 Tool | 是 |
+| `Source clients (4 Wiki + Umapyoi)` | 验证四站搜索与正文、Umapyoi 搜索/档案/资源索引 | 是 |
+| `MCP Tool calls (4 Wiki + Umapyoi)` | 启动 MCP HTTP 服务，调用四站正文和 Umapyoi 三类工具，验证未注册 Google | 是 |
 
-MCP 集成测试只有在 `RUN_MCP_INTEGRATION=1` 时执行。CI 会设置该变量；本地未启动 MCP 服务时默认跳过。
+MCP 集成测试只有在 `RUN_MCP_INTEGRATION=1` 时执行。wikiru/Umapyoi 直接联网测试需 `RUN_SOURCE_INTEGRATION=1`。CI 设置这些变量；新来源本地测试默认跳过联网部分。CI 的临时运行器从空缓存开始，同一 job 内复用响应，避免重复请求。
+
+Google 联网测试还需显式设置 `RUN_GOOGLE_INTEGRATION=1`，默认跳过。正文/搜索采用按主机至少 2 秒的同进程间隔、磁盘缓存；`403/429/567` 不立即重试并冷却至少 60 秒。多进程间不共享限速状态，请避免同时启动多个批量任务。缓存目录由 `CRAWLER_CACHE_DIR` 控制，正文 TTL 1 小时、Umapyoi/角色索引 24 小时，无过期缓存静默降级。
 
 部分相关测试：
+
+- `tests/test_http.py`
+- `tests/test_wiki_content.py`
+- `tests/test_umapyoi.py`
+- `tests/test_supplemental_sources.py`
 
 - `tests/test_biligame_assets.py`
 - `tests/test_biligame_crawler.py`
@@ -443,7 +467,7 @@ uv run pytest tests/test_cli_config.py
 python mcpserver.py --http -p 7777
 ```
 
-另开终端运行三站 MCP Tool 集成测试：
+另开终端运行四站及 Umapyoi MCP Tool 集成测试：
 
 ```bash
 RUN_MCP_INTEGRATION=1 uv run pytest tests/test_mcp_wiki_tools.py

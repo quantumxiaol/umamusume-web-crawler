@@ -2,19 +2,15 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Optional
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
-from urllib.request import ProxyHandler, Request, build_opener
+from urllib.request import Request
 
 from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
 from httplib2 import Http, ProxyInfo
 
 from umamusume_web_crawler.config import config
-
-_DEFAULT_SEARCH_UA = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/537.36 (KHTML, like Gecko) "
-    "Chrome/123.0.0.0 Safari/537.36"
-)
+from umamusume_web_crawler.web.http import BROWSER_USER_AGENT
+from umamusume_web_crawler.web.http import build_http_opener as _build_opener
 
 
 def _build_http() -> Optional[Http]:
@@ -59,19 +55,10 @@ def google_search_urls(search_term: str, **kwargs: Any) -> List[Dict[str, Any]]:
 
 
 def _google_user_agent() -> str:
-    user_agent = config.user_agent or _DEFAULT_SEARCH_UA
+    user_agent = config.user_agent or BROWSER_USER_AGENT
     if user_agent == "UmamusumeWebCrawler/1.0":
-        return _DEFAULT_SEARCH_UA
+        return BROWSER_USER_AGENT
     return user_agent
-
-
-def _build_proxy_handler(use_proxy: bool | None) -> ProxyHandler | None:
-    if use_proxy is False:
-        return None
-    proxy_url = config.proxy_url()
-    if not proxy_url:
-        return None
-    return ProxyHandler({"http": proxy_url, "https": proxy_url})
 
 
 def _fetch_google_search_html(
@@ -88,8 +75,7 @@ def _fetch_google_search_html(
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     }
     req = Request(url, headers=headers)
-    proxy_handler = _build_proxy_handler(use_proxy)
-    opener = build_opener(proxy_handler) if proxy_handler else build_opener()
+    opener = _build_opener(use_proxy)
     with opener.open(req, timeout=timeout_s) as resp:
         payload = resp.read()
     return payload.decode("utf-8", errors="replace")
