@@ -33,6 +33,7 @@ jobs:
             tests/test_wiki_content.py \
             tests/test_umapyoi.py \
             tests/test_biligame_assets.py \
+            tests/test_biligame_chibi.py \
             tests/test_character_index.py \
             tests/test_cli_config.py \
             tests/test_mcp_config.py \

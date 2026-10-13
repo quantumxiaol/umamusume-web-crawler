@@ -101,10 +101,14 @@ def test_cache_hit_and_project_user_agent(transport, monkeypatch):
     response = addinfourl(BytesIO(b'{"result":42}'), Message(), 'https://wiki.test/api', 200)
     opener.open.return_value = response
     monkeypatch.setattr(transport, 'build_http_opener', lambda use_proxy: opener)
-    assert transport.request_json('https://wiki.test/api', min_interval_s=0) == {'result':42}
-    assert transport.request_json('https://wiki.test/api', min_interval_s=0) == {'result':42}
+    assert transport.request_json('https://wiki.test/api', min_interval_s=0,
+                                  referer='https://wiki.test/') == {'result':42}
+    assert transport.request_json('https://wiki.test/api', min_interval_s=0,
+                                  referer='https://wiki.test/') == {'result':42}
     assert opener.open.call_count == 1
     assert opener.open.call_args.args[0].get_header('User-agent') == config.user_agent
+    assert opener.open.call_args.args[0].get_header('Accept') == 'application/json'
+    assert opener.open.call_args.args[0].get_header('Referer') == 'https://wiki.test/'
 
 
 @pytest.mark.parametrize('status', [403,429,567])
@@ -112,10 +116,16 @@ def test_rate_limit_has_no_retry_and_cools_down(transport, monkeypatch, status):
     from urllib.error import HTTPError
     from unittest.mock import Mock
     headers=Message(); headers['Retry-After']='120'
+    headers['Server']='TencentEdgeOne'; headers['EO-LOG-UUID']='diagnostic-id'
+    headers['Set-Cookie']='session=do-not-log'
     opener=Mock(); opener.open.side_effect=HTTPError('https://wiki.test/api',status,'blocked',headers,None)
     monkeypatch.setattr(transport,'build_http_opener',lambda use_proxy: opener)
-    with pytest.raises(transport.SourceError, match=str(status)):
+    with pytest.raises(transport.SourceError, match=str(status)) as caught:
         transport.request_text('https://wiki.test/api',min_interval_s=0)
+    assert caught.value.response_headers == {
+        'Server': 'TencentEdgeOne', 'EO-LOG-UUID': 'diagnostic-id', 'Retry-After': '120',
+    }
+    assert 'diagnostic-id' in str(caught.value) and 'do-not-log' not in str(caught.value)
     with pytest.raises(transport.SourceError, match='cooling down'):
         transport.request_text('https://wiki.test/another',min_interval_s=0)
     assert opener.open.call_count==1
@@ -139,3 +149,44 @@ def test_success_retry_after_header_does_not_trigger_retry(transport, monkeypatc
     monkeypatch.setattr(transport,'build_http_opener',lambda use_proxy: opener)
     assert transport.request_json('https://umapyoi.test/api',min_interval_s=0)==[]
     assert opener.open.call_count==1
+
+
+def test_binary_transport_bounds_body_and_sets_project_headers(transport, monkeypatch):
+    from unittest.mock import Mock
+    opener = Mock()
+    opener.open.return_value = addinfourl(BytesIO(b'12345'), Message(), 'https://wiki.test/a.png', 200)
+    monkeypatch.setattr(transport, 'build_http_opener', lambda use_proxy: opener)
+    with pytest.raises(transport.SourceError, match='exceeds'):
+        transport.request_bytes('https://wiki.test/a.png', max_bytes=4, min_interval_s=0,
+                                referer='https://wiki.test/source')
+    request = opener.open.call_args.args[0]
+    assert request.get_header('User-agent') == config.user_agent
+    assert request.get_header('Referer') == 'https://wiki.test/source'
+
+
+def test_binary_and_text_share_host_cooldown(transport, monkeypatch):
+    from urllib.error import HTTPError
+    from unittest.mock import Mock
+    opener = Mock()
+    headers = Message(); headers['Retry-After'] = '120'
+    opener.open.side_effect = HTTPError('https://wiki.test/image.png', 503, 'wait', headers, None)
+    monkeypatch.setattr(transport, 'build_http_opener', lambda use_proxy: opener)
+    with pytest.raises(transport.SourceError, match='503'):
+        transport.request_bytes('https://wiki.test/image.png', min_interval_s=0)
+    with pytest.raises(transport.SourceError, match='cooling down'):
+        transport.request_text('https://wiki.test/api', min_interval_s=0)
+    assert opener.open.call_count == 1
+
+
+def test_incomplete_binary_transfer_retries_once(transport, monkeypatch):
+    from http.client import IncompleteRead
+    from unittest.mock import Mock
+    response = Mock()
+    response.__enter__ = Mock(return_value=response)
+    response.__exit__ = Mock(return_value=False)
+    response.read.side_effect = [IncompleteRead(b'partial', 10), b'complete']
+    opener = Mock(); opener.open.return_value = response
+    monkeypatch.setattr(transport, 'build_http_opener', lambda use_proxy: opener)
+    monkeypatch.setattr(transport.time, 'sleep', lambda seconds: None)
+    assert transport.request_bytes('https://wiki.test/image.png', min_interval_s=0) == b'complete'
+    assert opener.open.call_count == 2

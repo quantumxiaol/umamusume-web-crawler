@@ -29,6 +29,10 @@ from umamusume_web_crawler.web.character_index import (
     DEFAULT_NAME_OVERRIDES,
     update_character_index,
 )
+from umamusume_web_crawler.web.biligame_chibi import (
+    DEFAULT_CHIBI_OUTPUT, DEFAULT_CHIBI_REQUEST_DELAY, DEFAULT_CHIBI_PAGE_DELAY,
+    download_biligame_chibi,
+)
 from umamusume_web_crawler.web.wiki_pages import fetch_wiki_page
 from umamusume_web_crawler.web.wiki_urls import detect_site
 from umamusume_web_crawler.web.umapyoi import (
@@ -68,7 +72,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Umamusume crawler CLI")
     parser.add_argument(
         "--task",
-        choices=("page", "biligame-assets", "update-character-index", "umapyoi-search", "umapyoi-character", "umapyoi-resources"),
+        choices=("page", "biligame-assets", "biligame-chibi", "update-character-index", "umapyoi-search", "umapyoi-character", "umapyoi-resources"),
         default="page",
         help="Task to run (default: page)",
     )
@@ -153,7 +157,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--character",
         action="append",
-        help="Biligame wiki page suffix to crawl (can be repeated).",
+        help="Biligame page suffix; for biligame-chibi: Chinese/English name or character ID (repeatable).",
+    )
+    parser.add_argument(
+        "--chibi-output", default=DEFAULT_CHIBI_OUTPUT,
+        help=f"Chibi PNG output directory (default: {DEFAULT_CHIBI_OUTPUT}).",
+    )
+    parser.add_argument(
+        "--base-only", action="store_true",
+        help="For biligame-chibi, download only base costumes (default: all costumes).",
     )
     parser.add_argument(
         "--name",
@@ -204,14 +216,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--request-delay",
         type=float,
-        default=1.5,
-        help="Minimum delay before each asset download (default: 1.5)",
+        default=None,
+        help="Request/download interval in seconds (biligame-chibi: 5 per host, other tasks: 1.5).",
     )
     parser.add_argument(
         "--page-delay",
         type=float,
-        default=5.0,
-        help="Minimum delay between character pages (default: 5.0)",
+        default=None,
+        help="Delay between character/costume pages in seconds (biligame-chibi: 10, other tasks: 5).",
     )
     parser.add_argument(
         "--concurrency",
@@ -258,11 +270,32 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Reduce biligame asset crawl logging.",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.request_delay is None:
+        args.request_delay = DEFAULT_CHIBI_REQUEST_DELAY if args.task == "biligame-chibi" else 1.5
+    if args.page_delay is None:
+        args.page_delay = DEFAULT_CHIBI_PAGE_DELAY if args.task == "biligame-chibi" else 5.0
+    return args
 
 
 async def _run(args: argparse.Namespace) -> None:
     use_proxy = True if args.use_proxy else False if args.no_proxy else None
+    if args.task == "biligame-chibi":
+        summary = await download_biligame_chibi(
+            characters=args.character, characters_json=args.characters_json,
+            output_dir=args.chibi_output, base_only=args.base_only,
+            refresh_existing=args.refresh_existing, use_proxy=use_proxy,
+            request_delay=args.request_delay, page_delay=args.page_delay,
+            progress=None if args.asset_quiet else print,
+        )
+        content = json.dumps(summary, ensure_ascii=False, indent=2)
+        if args.asset_summary_output:
+            _write_output(content, args.asset_summary_output)
+        print(content)
+        if summary["pages_pending"]:
+            raise SystemExit(1)
+        return
+
     if args.task == "update-character-index":
         payload, unresolved = await update_character_index(
             args.characters_json,

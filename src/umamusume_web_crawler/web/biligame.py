@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import re
 from typing import Any, Dict
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urljoin
 
 from bs4 import BeautifulSoup
 
@@ -89,7 +89,8 @@ async def fetch_biligame_wikitext(
     }
     url = _build_api_url(endpoint, params)
     payload = await asyncio.to_thread(
-        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy
+        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy,
+        referer=urljoin(endpoint, "./"),
     )
     page = _extract_page(payload)
     content = _extract_wikitext_from_page(page)
@@ -156,7 +157,8 @@ async def search_biligame_titles(
     }
     url = _build_api_url(endpoint, params)
     payload = await asyncio.to_thread(
-        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy
+        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy,
+        referer=urljoin(endpoint, "./"),
     )
     if isinstance(payload, list) and len(payload) > 1 and isinstance(payload[1], list):
         return [str(title) for title in payload[1] if title]
@@ -169,6 +171,8 @@ async def fetch_biligame_html(
     endpoint: str = DEFAULT_API_ENDPOINT,
     timeout_s: float = 30.0,
     use_proxy: bool | None = None,
+    cache_ttl_s: float = 3600,
+    min_interval_s: float = 2,
 ) -> str:
     title = _normalize_title(title_or_url)
     if not title:
@@ -182,7 +186,9 @@ async def fetch_biligame_html(
     }
     url = _build_api_url(endpoint, params)
     payload = await asyncio.to_thread(
-        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy
+        _request_json, url, timeout_s=timeout_s, use_proxy=use_proxy,
+        cache_ttl_s=cache_ttl_s, min_interval_s=min_interval_s,
+        referer=urljoin(endpoint, "./"),
     )
     html = _extract_parse_html(payload)
     if not html:

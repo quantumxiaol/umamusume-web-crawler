@@ -7,6 +7,7 @@ import json
 import os
 import threading
 import time
+from http.client import IncompleteRead
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
@@ -41,10 +42,12 @@ class SourceError(RuntimeError):
     """A source failed; never present an error/challenge page as article content."""
 
     def __init__(self, message: str, *, status: int | None = None,
-                 retry_after: str | None = None):
+                 retry_after: str | None = None,
+                 response_headers: dict[str, str] | None = None):
         super().__init__(message)
         self.status = status
         self.retry_after = retry_after
+        self.response_headers = response_headers or {}
 
 
 _locks: dict[str, threading.Lock] = {}
@@ -71,10 +74,84 @@ def _validate_payload(text: str, json_response: bool):
     return value
 
 
+def _request_bytes_locked(
+    url: str, *, host: str, timeout_s: float, use_proxy: bool | None,
+    min_interval_s: float, max_bytes: int, referer: str | None = None,
+    accept: str = "*/*",
+) -> bytes:
+    remaining = _blocked_until.get(host, 0) - time.monotonic()
+    if remaining > 0:
+        raise SourceError(f"{host} is cooling down; retry in {remaining:.0f}s.",
+                          retry_after=str(int(remaining) + 1))
+    for attempt in range(2):
+        wait = min_interval_s - (time.monotonic() - _last_request.get(host, 0))
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            headers = {
+                "User-Agent": config.user_agent,
+                "Accept": accept,
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7",
+            }
+            if referer:
+                headers["Referer"] = referer
+            request = Request(url, headers=headers)
+            with build_http_opener(use_proxy).open(request, timeout=timeout_s) as response:
+                data = response.read(max_bytes + 1)
+                if len(data) > max_bytes:
+                    raise SourceError(f"Source response exceeds {max_bytes} bytes.")
+            return data
+        except HTTPError as exc:
+            retry_after = exc.headers.get("Retry-After")
+            # Keep only public diagnostic headers; never retain Set-Cookie or
+            # other session/authentication material in logs or manifests.
+            response_headers = {
+                name: exc.headers[name]
+                for name in ("Server", "Content-Type", "Retry-After", "EO-LOG-UUID")
+                if exc.headers.get(name)
+            }
+            if exc.code in (403, 429, 567) or retry_after:
+                cooldown = max(60, int(retry_after)) if retry_after and retry_after.isdigit() else 60
+                _blocked_until[host] = time.monotonic() + cooldown
+            if attempt == 0 and exc.code in (502, 503, 504) and not retry_after:
+                time.sleep(2)
+                continue
+            raise SourceError(
+                f"{host} returned HTTP {exc.code}; retry later"
+                + (f" (Retry-After: {retry_after})" if retry_after else "")
+                + (" [" + "; ".join(f"{key}: {value}" for key, value in response_headers.items()) + "]"
+                   if response_headers else "") + ".",
+                status=exc.code, retry_after=retry_after,
+                response_headers=response_headers,
+            ) from exc
+        except (URLError, TimeoutError, ConnectionError, IncompleteRead) as exc:
+            if attempt == 0:
+                time.sleep(2)
+                continue
+            raise SourceError(f"Request to {host} failed: {exc}") from exc
+        finally:
+            _last_request[host] = time.monotonic()
+
+
+def request_bytes(
+    url: str, *, timeout_s: float = 45, use_proxy: bool | None = None,
+    min_interval_s: float = 2, max_bytes: int = 16_000_000,
+    referer: str | None = None,
+) -> bytes:
+    """Bounded binary GET using the same host limits/retries as text requests."""
+    host = urlparse(url).netloc
+    with _host_lock(host):
+        return _request_bytes_locked(
+            url, host=host, timeout_s=timeout_s, use_proxy=use_proxy,
+            min_interval_s=min_interval_s, max_bytes=max_bytes, referer=referer,
+        )
+
+
 def request_text(
     url: str, *, timeout_s: float = 45, use_proxy: bool | None = None,
     cache_ttl_s: float = 3600, min_interval_s: float = 2,
     json_response: bool = False,
+    referer: str | None = None,
 ) -> str:
     """GET public content with a disk cache and serialized requests per host.
 
@@ -84,7 +161,10 @@ def request_text(
     """
     host = urlparse(url).netloc
     cache_dir = Path(os.getenv("CRAWLER_CACHE_DIR", "results/.http-cache"))
-    key = hashlib.sha256(f"{url}\n{config.user_agent}".encode()).hexdigest()
+    cache_identity = f"{url}\n{config.user_agent}"
+    if referer:
+        cache_identity += f"\n{referer}"
+    key = hashlib.sha256(cache_identity.encode()).hexdigest()
     cache_path = cache_dir / f"{key}.json"
     with _host_lock(host):
         if cache_ttl_s > 0:
@@ -95,45 +175,14 @@ def request_text(
                     return cached["text"]
             except (OSError, ValueError, KeyError, TypeError, SourceError):
                 pass
-        remaining = _blocked_until.get(host, 0) - time.monotonic()
-        if remaining > 0:
-            raise SourceError(f"{host} is cooling down; retry in {remaining:.0f}s.")
-        for attempt in range(2):
-            wait = min_interval_s - (time.monotonic() - _last_request.get(host, 0))
-            if wait > 0:
-                time.sleep(wait)
-            try:
-                request = Request(url, headers={
-                    "User-Agent": config.user_agent,
-                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8,ja;q=0.7",
-                })
-                with build_http_opener(use_proxy).open(request, timeout=timeout_s) as response:
-                    data = response.read(16_000_001)
-                    if len(data) > 16_000_000:
-                        raise SourceError("Source response exceeds 16 MB.")
-                    text = data.decode("utf-8")
-                _validate_payload(text, json_response)
-                break
-            except HTTPError as exc:
-                retry_after = exc.headers.get("Retry-After")
-                if exc.code in (403, 429, 567):
-                    cooldown = max(60, int(retry_after)) if retry_after and retry_after.isdigit() else 60
-                    _blocked_until[host] = time.monotonic() + cooldown
-                if attempt == 0 and exc.code in (502, 503, 504) and not retry_after:
-                    time.sleep(2)
-                    continue
-                raise SourceError(
-                    f"{host} returned HTTP {exc.code}; retry later"
-                    + (f" (Retry-After: {retry_after})" if retry_after else "") + ".",
-                    status=exc.code, retry_after=retry_after,
-                ) from exc
-            except (URLError, TimeoutError) as exc:
-                if attempt == 0:
-                    time.sleep(2)
-                    continue
-                raise SourceError(f"Request to {host} failed: {exc}") from exc
-            finally:
-                _last_request[host] = time.monotonic()
+        data = _request_bytes_locked(
+            url, host=host, timeout_s=timeout_s, use_proxy=use_proxy,
+            min_interval_s=min_interval_s, max_bytes=16_000_000,
+            referer=referer,
+            accept="application/json" if json_response else "text/html, text/plain;q=0.9, */*;q=0.8",
+        )
+        text = data.decode("utf-8")
+        _validate_payload(text, json_response)
         if cache_ttl_s > 0:
             try:
                 cache_dir.mkdir(parents=True, exist_ok=True)
