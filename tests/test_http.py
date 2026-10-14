@@ -1,4 +1,5 @@
 from email.message import Message
+from http.client import IncompleteRead
 from io import BytesIO
 from urllib.request import HTTPSHandler, ProxyHandler
 from urllib.response import addinfourl
@@ -129,6 +130,123 @@ def test_rate_limit_has_no_retry_and_cools_down(transport, monkeypatch, status):
     with pytest.raises(transport.SourceError, match='cooling down'):
         transport.request_text('https://wiki.test/another',min_interval_s=0)
     assert opener.open.call_count==1
+
+
+@pytest.mark.parametrize("method", ["request_text", "request_json", "request_bytes"])
+def test_cloudflare_diagnostics_keep_only_headers_and_title(transport, monkeypatch, tmp_path, method):
+    from urllib.error import HTTPError
+    from unittest.mock import Mock
+
+    headers = Message()
+    headers["Server"] = "cloudflare"
+    headers["Content-Type"] = "text/html; charset=UTF-8"
+    headers["cf-ray"] = "test-ray-NRT"
+    headers["CF-Mitigated"] = "challenge"
+    headers["Set-Cookie"] = "session=private-cookie"
+    body = BytesIO(b"<html><head><title>\n Just &amp; a moment...\t</title></head>"
+                   b"<body><script>private-challenge-token</script></body></html>")
+    opener = Mock()
+    opener.open.side_effect = HTTPError("https://wiki.test/api", 403, "Forbidden", headers, body)
+    monkeypatch.setattr(transport, "build_http_opener", lambda use_proxy: opener)
+
+    request = getattr(transport, method)
+    with pytest.raises(transport.SourceError) as caught:
+        request("https://wiki.test/api", min_interval_s=0)
+    error = caught.value
+    assert error.status == 403
+    assert error.response_headers == {
+        "Server": "cloudflare", "Content-Type": "text/html; charset=UTF-8",
+        "CF-Ray": "test-ray-NRT", "cf-mitigated": "challenge",
+    }
+    assert error.error_page_title == "Just & a moment..."
+    assert "CF-Ray: test-ray-NRT" in str(error)
+    assert "cf-mitigated: challenge" in str(error)
+    assert "Error page title: Just & a moment..." in str(error)
+    assert "private-cookie" not in str(error) and "private-challenge-token" not in str(error)
+    assert "<html>" not in str(error)
+    assert body.closed
+    assert not list(tmp_path.iterdir())
+    with pytest.raises(transport.SourceError, match="cooling down"):
+        request("https://wiki.test/next", min_interval_s=0)
+    assert opener.open.call_count == 1
+
+
+@pytest.mark.parametrize(("content_type", "payload", "expected"), [
+    ("application/json", b'{"message":"<title>not HTML</title>"}', None),
+    ("text/html", b"<html><body>no title</body></html>", None),
+    ("text/html", b" " * 8192 + b"<title>outside read limit</title>", None),
+    ("text/html", b"<title>" + b"x" * 500 + b"</title>", "x" * 200),
+    ("text/html; charset=iso-8859-1", b"<title>Acc\xe8s refus\xe9</title>", "Accès refusé"),
+    ("text/html; charset=unknown-charset", "<title>拒绝访问</title>".encode(), "拒绝访问"),
+])
+def test_error_title_read_is_bounded_and_optional(transport, monkeypatch, content_type, payload, expected):
+    from urllib.error import HTTPError
+    from unittest.mock import Mock
+
+    headers = Message()
+    headers["Content-Type"] = content_type
+    body = Mock(wraps=BytesIO(payload))
+    opener = Mock()
+    opener.open.side_effect = HTTPError("https://wiki.test/api", 403, "Forbidden", headers, body)
+    monkeypatch.setattr(transport, "build_http_opener", lambda use_proxy: opener)
+    with pytest.raises(transport.SourceError) as caught:
+        transport.request_text("https://wiki.test/api", min_interval_s=0)
+    assert caught.value.status == 403
+    assert caught.value.error_page_title == expected
+    if content_type.startswith("text/html"):
+        body.read.assert_called_once_with(8192)
+    else:
+        body.read.assert_not_called()
+    body.close.assert_called_once()
+
+
+@pytest.mark.parametrize(("operation", "failure"), [
+    ("read", TimeoutError("read failed")),
+    ("read", IncompleteRead(b"partial", 10)),
+    ("close", OSError("close failed")),
+])
+def test_diagnostic_failure_preserves_original_http_error(transport, monkeypatch, operation, failure):
+    from urllib.error import HTTPError
+    from unittest.mock import Mock
+
+    headers = Message()
+    headers["Content-Type"] = "text/html"
+    headers["CF-Ray"] = "test-ray"
+    body = Mock()
+    body.read.return_value = b"<html>no title</html>"
+    getattr(body, operation).side_effect = failure
+    opener = Mock()
+    opener.open.side_effect = HTTPError("https://wiki.test/api", 403, "Forbidden", headers, body)
+    monkeypatch.setattr(transport, "build_http_opener", lambda use_proxy: opener)
+    with pytest.raises(transport.SourceError, match="HTTP 403") as caught:
+        transport.request_text("https://wiki.test/api", min_interval_s=0)
+    assert caught.value.response_headers["CF-Ray"] == "test-ray"
+    assert caught.value.error_page_title is None
+    assert opener.open.call_count == 1
+    body.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_wiki_tool_retains_http_diagnostics_in_error_json(transport, monkeypatch):
+    from urllib.error import HTTPError
+    from unittest.mock import Mock
+    from umamusume_web_crawler.web.tools import crawl_wiki
+
+    headers = Message()
+    headers["Content-Type"] = "text/html"
+    headers["CF-Ray"] = "tool-ray"
+    headers["cf-mitigated"] = "challenge"
+    opener = Mock()
+    opener.open.side_effect = HTTPError(
+        "https://mzh.moegirl.org.cn/test", 403, "Forbidden", headers,
+        BytesIO(b"<title>Just a moment...</title>"),
+    )
+    monkeypatch.setattr(transport, "build_http_opener", lambda use_proxy: opener)
+    payload = await crawl_wiki("moegirl", "test", use_proxy=False)
+    assert payload["status"] == "error"
+    assert "CF-Ray: tool-ray" in payload["message"]
+    assert "cf-mitigated: challenge" in payload["message"]
+    assert "Error page title: Just a moment..." in payload["message"]
 
 
 def test_api_error_with_http_200_is_never_cached(transport, monkeypatch, tmp_path):

@@ -251,10 +251,13 @@ async def test_biligame_page_api_sets_same_wiki_referer(monkeypatch):
 async def test_page_block_records_phase_and_edge_request_id(setup):
     run, root, _, page, api, binary, _ = setup
     headers = {"Server": "TencentEdgeOne", "EO-LOG-UUID": "sample-id"}
-    page.side_effect = SourceError("blocked", status=567, response_headers=headers)
+    page.side_effect = SourceError("blocked", status=567, response_headers=headers,
+                                  error_page_title="Access denied")
     result = await run()
     assert result["stopped"] and result["errors"][0]["stage"] == "page_html"
     assert result["errors"][0]["http_error"]["response_headers"] == headers
+    assert result["errors"][0]["http_error"]["error_page_title"] == "Access denied"
     entry = json.loads((root / chibi.MANIFEST_NAME).read_text())["pages"]["1004:100401"]
     assert entry["http_error"]["response_headers"]["EO-LOG-UUID"] == "sample-id"
+    assert entry["http_error"]["error_page_title"] == "Access denied"
     api.assert_not_called(); binary.assert_not_called()

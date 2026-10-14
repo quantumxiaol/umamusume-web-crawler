@@ -328,6 +328,8 @@ async def download_biligame_chibi(
                 if isinstance(exc, SourceError):
                     entry["http_error"] = {"status": exc.status, "retry_after": exc.retry_after,
                                            "response_headers": exc.response_headers}
+                    if exc.error_page_title:
+                        entry["http_error"]["error_page_title"] = exc.error_page_title
             _save_manifest(manifest_path, manifest)
             if entry["errors"]:
                 summary["errors"].append({

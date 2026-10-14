@@ -470,6 +470,8 @@ CI 使用显式测试列表，包含离线回归和五个独立的站点可用�
 
 矩阵设置 `fail-fast: false`，一个站点失败不会取消其他站点；最多同时检查两个站点。来源检查失败时，本站点的 MCP 阶段不再请求来源，报告为 `skipped`（未验证）。Actions 摘要分别列出来源调用、MCP 服务和 MCP 工具的结果；每站的 `source-check-<site>` 附件保存 JUnit 测试报告与已产生的 MCP 日志，便于查看具体失败用例、HTTP 错误或数据断言。
 
+HTTP 错误会记录响应中的 `CF-Ray`、`cf-mitigated` 和错误页标题（若有），与状态码一起出现在步骤日志、JUnit 报告和工具返回的错误信息中。标题只从 HTML 错误响应的前 8 KiB 提取，压成单行并截到 200 字符；不保存完整错误页、Cookie 或验证脚本。标题读取失败时仍保留原始 HTTP 错误，不为诊断重新请求。小人下载的错误记录也保留这些诊断信息。
+
 推送和 PR 会自动运行，也可在 Actions 中使用 **Run workflow** 手动复查。MCP 集成测试只有在 `RUN_MCP_INTEGRATION=1` 时执行。wikiru/Umapyoi 直接联网测试需 `RUN_SOURCE_INTEGRATION=1`。CI 设置这些变量；新来源本地测试默认跳过联网部分。每个站点从空缓存开始，Python 和 MCP 在同一 job 内共享响应缓存，避免重复请求。
 
 Google 联网测试还需显式设置 `RUN_GOOGLE_INTEGRATION=1`，默认跳过。正文/搜索采用按主机至少 2 秒的同进程间隔、磁盘缓存；`403/429/567` 不立即重试并冷却至少 60 秒。多进程间不共享限速状态，请避免同时启动多个批量任务。缓存目录由 `CRAWLER_CACHE_DIR` 控制，正文 TTL 1 小时、Umapyoi/角色索引 24 小时，无过期缓存静默降级。

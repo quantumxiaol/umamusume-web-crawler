@@ -7,11 +7,14 @@ import json
 import os
 import threading
 import time
-from http.client import IncompleteRead
+from contextlib import suppress
+from http.client import HTTPException, IncompleteRead
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import OpenerDirector, ProxyHandler, Request, build_opener
+
+from bs4 import BeautifulSoup, SoupStrainer
 
 from umamusume_web_crawler.config import config
 
@@ -22,6 +25,8 @@ BROWSER_USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/123.0.0.0 Safari/537.36"
 )
+_ERROR_BODY_LIMIT = 8192
+_ERROR_TITLE_LIMIT = 200
 
 
 def build_http_opener(use_proxy: bool | None = None) -> OpenerDirector:
@@ -43,11 +48,38 @@ class SourceError(RuntimeError):
 
     def __init__(self, message: str, *, status: int | None = None,
                  retry_after: str | None = None,
-                 response_headers: dict[str, str] | None = None):
+                 response_headers: dict[str, str] | None = None,
+                 error_page_title: str | None = None):
         super().__init__(message)
         self.status = status
         self.retry_after = retry_after
         self.response_headers = response_headers or {}
+        self.error_page_title = error_page_title
+
+
+def _http_error_title(response: HTTPError) -> str | None:
+    """Read a bounded HTML prefix for diagnostics, without retaining its body."""
+    try:
+        if response.headers.get_content_type() not in ("text/html", "application/xhtml+xml"):
+            return None
+        body = response.read(_ERROR_BODY_LIMIT)
+        charset = response.headers.get_content_charset() or "utf-8"
+        try:
+            text = body.decode(charset, errors="replace")
+        except LookupError:
+            text = body.decode("utf-8", errors="replace")
+        title = BeautifulSoup(text, "html.parser", parse_only=SoupStrainer("title")).find("title")
+        if title is None:
+            return None
+        text = title.get_text(" ", strip=True)
+        text = "".join(char for char in text if char.isprintable() or char.isspace())
+        return " ".join(text.split())[:_ERROR_TITLE_LIMIT] or None
+    except (OSError, HTTPException, ValueError):
+        # A failed diagnostic read must not replace the original HTTP status.
+        return None
+    finally:
+        with suppress(OSError, HTTPException):
+            response.close()
 
 
 _locks: dict[str, threading.Lock] = {}
@@ -107,22 +139,29 @@ def _request_bytes_locked(
             # other session/authentication material in logs or manifests.
             response_headers = {
                 name: exc.headers[name]
-                for name in ("Server", "Content-Type", "Retry-After", "EO-LOG-UUID")
+                for name in ("Server", "Content-Type", "Retry-After", "EO-LOG-UUID",
+                             "CF-Ray", "cf-mitigated")
                 if exc.headers.get(name)
             }
             if exc.code in (403, 429, 567) or retry_after:
                 cooldown = max(60, int(retry_after)) if retry_after and retry_after.isdigit() else 60
                 _blocked_until[host] = time.monotonic() + cooldown
             if attempt == 0 and exc.code in (502, 503, 504) and not retry_after:
+                with suppress(OSError, HTTPException):
+                    exc.close()
                 time.sleep(2)
                 continue
+            error_page_title = _http_error_title(exc)
+            diagnostics = [f"{key}: {value}" for key, value in response_headers.items()]
+            if error_page_title:
+                diagnostics.append(f"Error page title: {error_page_title}")
             raise SourceError(
                 f"{host} returned HTTP {exc.code}; retry later"
                 + (f" (Retry-After: {retry_after})" if retry_after else "")
-                + (" [" + "; ".join(f"{key}: {value}" for key, value in response_headers.items()) + "]"
-                   if response_headers else "") + ".",
+                + (" [" + "; ".join(diagnostics) + "]" if diagnostics else "") + ".",
                 status=exc.code, retry_after=retry_after,
                 response_headers=response_headers,
+                error_page_title=error_page_title,
             ) from exc
         except (URLError, TimeoutError, ConnectionError, IncompleteRead) as exc:
             if attempt == 0:
