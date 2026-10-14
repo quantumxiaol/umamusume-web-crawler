@@ -37,6 +37,7 @@ jobs:
             tests/test_character_index.py \
             tests/test_cli_config.py \
             tests/test_mcp_config.py \
+            tests/test_skill_cli.py \
             tests/test_umamusu_wiki.py
 
   crawler-api:

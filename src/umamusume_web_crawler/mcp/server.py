@@ -18,8 +18,9 @@ from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 
 from umamusume_web_crawler.config import config
-from umamusume_web_crawler.web.tools import crawl_wiki, search_wiki, umapyoi_tool
-from umamusume_web_crawler.web.umamusu_wiki import download_umamusu_category_images as _download_umamusu_category_images
+from umamusume_web_crawler.web.tools import (
+    crawl_wiki, search_wiki, umamusu_category_images_tool, umapyoi_tool,
+)
 
 mcp = FastMCP("Umamusume Web MCP")
 
@@ -96,23 +97,13 @@ async def download_umamusu_category_images(
     delay_s: float = 0.5,
     use_proxy: bool | None = None,
 ) -> dict:
-    try:
-        downloads = await _download_umamusu_category_images(
-            category,
-            output_dir=output_dir,
-            max_files=max_files,
-            delay_s=delay_s,
-            use_proxy=use_proxy,
-        )
-        return {
-            "status": "success",
-            "category": category,
-            "output_dir": output_dir,
-            "count": len(downloads),
-            "downloaded": downloads,
-        }
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
+    return await umamusu_category_images_tool(
+        category,
+        output_dir=output_dir,
+        max_files=max_files,
+        delay_s=delay_s,
+        use_proxy=use_proxy,
+    )
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:

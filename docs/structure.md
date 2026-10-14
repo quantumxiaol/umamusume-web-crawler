@@ -24,10 +24,10 @@
   官网角色名单与 Biligame 角色/衣装索引合并。
 - [src/umamusume_web_crawler/web/search.py](src/umamusume_web_crawler/web/search.py)
   Google 搜索封装。
-- [skills/umamusume-wiki-crawler/skill.md](skills/umamusume-wiki-crawler/skill.md)
+- [skills/umamusume-wiki-crawler/SKILL.md](../skills/umamusume-wiki-crawler/SKILL.md)
   skill 说明。
-- [skills/umamusume-wiki-crawler/scripts/crawl.py](skills/umamusume-wiki-crawler/scripts/crawl.py)
-  skill 使用的 CLI 包装器。
+- [skills/umamusume-wiki-crawler/scripts/crawl.py](../skills/umamusume-wiki-crawler/scripts/crawl.py)
+  skill 使用的 CLI 包装器，只处理参数、进度和输出；查询与分类图片下载都调用包内 `web/tools.py`，下载循环在 `web/umamusu_wiki.py`。
 
 正文主路径：`wiki_pages.py` 选择来源 → `html_content.py` 保留表格/台词 → `web/tools.py` 组装统一结果，MCP 与 skill 只做入口适配。`http.py` 共享代理、项目 UA、磁盘缓存、按主机串行限速与错误处理。`wikiru.py` 读取 PukiWiki，`umapyoi.py` 读取 JSON API。原有 raw/extracts 函数仍保留，默认正文入口不再使用它们。
 
@@ -364,7 +364,7 @@ python mcpserver.py --http -p 7777
 
 当前 skill：
 
-- [skills/umamusume-wiki-crawler/skill.md](skills/umamusume-wiki-crawler/skill.md)
+- [skills/umamusume-wiki-crawler/SKILL.md](../skills/umamusume-wiki-crawler/SKILL.md)
 
 统一入口：
 
@@ -387,7 +387,8 @@ uv run python skills/umamusume-wiki-crawler/scripts/crawl.py <tool> [args]
 说明：
 
 - skill 没有 Google 搜索
-- skill 没有 Biligame 角色音频/图片下载
+- Biligame 小人 PNG 使用主 CLI 的 `--task biligame-chibi`；原皮/换装与续跑说明见 `SKILL.md`
+- 其他 Biligame 角色音频/图片下载仍使用主 CLI 的 `--task biligame-assets`
 - skill 主要面向“先搜索，再抓取，再回答”的 agent 工作流
 
 示例：

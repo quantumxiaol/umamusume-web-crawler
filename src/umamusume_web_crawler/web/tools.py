@@ -1,9 +1,11 @@
 """Transport-neutral tool results for MCP and skill commands."""
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from .biligame import search_biligame_titles
 from .moegirl import search_moegirl_titles
-from .umamusu_wiki import search_umamusu_titles
+from .umamusu_wiki import download_umamusu_category_images, search_umamusu_titles
 from .wikiru import search_wikiru_titles
 from .wiki_pages import fetch_wiki_page
 from .wiki_urls import wiki_url
@@ -49,3 +51,34 @@ async def umapyoi_tool(action: str, *, keyword: str = '', game_id: int = 0,
         if action == 'search':
             return {'results': [], 'error': str(exc)}
         return {'status': 'error', 'message': str(exc)}
+
+
+async def umamusu_category_images_tool(
+    category: str,
+    *,
+    output_dir: str = "results/umamusu_wiki_images",
+    max_files: int | None = None,
+    delay_s: float = 0.5,
+    use_proxy: bool | None = None,
+    skip_existing: bool = False,
+    progress: Callable[[int, int], None] | None = None,
+) -> dict:
+    try:
+        downloads = await download_umamusu_category_images(
+            category,
+            output_dir=output_dir,
+            max_files=max_files,
+            delay_s=delay_s,
+            use_proxy=use_proxy,
+            skip_existing=skip_existing,
+            progress=progress,
+        )
+        return {
+            "status": "success",
+            "category": category,
+            "output_dir": output_dir,
+            "count": len(downloads),
+            "downloaded": downloads,
+        }
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}

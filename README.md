@@ -32,7 +32,7 @@ Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也
 ### 写小说
 
 ```
-你有skills/umamusume-wiki-crawler/skill.md ，能够获取角色的wiki 资料。
+你有skills/umamusume-wiki-crawler/SKILL.md ，能够获取角色的wiki 资料。
 你需要根据用户构思的小说剧情，结合wiki查到的信息，写一篇完整的小说。
 ```
 
@@ -42,7 +42,7 @@ Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也
 ### 写角色扮演提示词
 
 ```
-你有skills/umamusume-wiki-crawler/skill.md ，能够获取角色的wiki 资料。
+你有skills/umamusume-wiki-crawler/SKILL.md ，能够获取角色的wiki 资料。
 你需要根据用户提供的角色，在wiki查信息，写一份sillytavern 角色扮演所需要的提示词。
 ```
 
@@ -65,7 +65,7 @@ Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也
 | Umapyoi 搜索/档案/资源索引 | 有 | 有 | 有 | 有 |
 | 角色/衣装索引更新 | 有 | 有 | 无 | 无 |
 | Biligame 角色音频/图片下载 | 有 | 有 | 无 | 无 |
-| Biligame 小人 PNG 批量下载 | 有 | 有 | 无 | 无 |
+| Biligame 小人 PNG 批量下载 | 有 | 有 | 无 | 通过主 CLI |
 | umamusu.wiki 分类图片下载 | 有 | 无 | 有 | 有 |
 | 视觉抓取 | 有 | 有 | 无 | 无 |
 

@@ -50,7 +50,14 @@ async def test_list_umamusu_category_files_handles_continue(monkeypatch) -> None
 
 
 @pytest.mark.asyncio
-async def test_download_umamusu_category_images_uses_file_titles(tmp_path, monkeypatch) -> None:
+@pytest.mark.parametrize("skip_existing", [False, True])
+async def test_download_umamusu_category_images_uses_file_titles(tmp_path, monkeypatch, skip_existing) -> None:
+    info_calls = []
+    byte_calls = []
+    progress = []
+    existing = tmp_path / "Bg_0001.png"
+    existing.write_bytes(b"already downloaded")
+
     async def fake_list(
         category_title_or_url: str,
         *,
@@ -71,6 +78,7 @@ async def test_download_umamusu_category_images_uses_file_titles(tmp_path, monke
         timeout_s: float = 30.0,
         use_proxy: bool | None = None,
     ) -> dict[str, object]:
+        info_calls.append(file_title_or_url)
         filename = file_title_or_url.split(":", 1)[1]
         return {
             "title": file_title_or_url,
@@ -82,6 +90,7 @@ async def test_download_umamusu_category_images_uses_file_titles(tmp_path, monke
     def fake_request_bytes(
         url: str, *, timeout_s: float, use_proxy: bool | None = None
     ) -> bytes:
+        byte_calls.append(url)
         return url.encode("utf-8")
 
     monkeypatch.setattr(umamusu_wiki, "list_umamusu_category_files", fake_list)
@@ -92,11 +101,33 @@ async def test_download_umamusu_category_images_uses_file_titles(tmp_path, monke
         "Category:Game_Backgrounds",
         output_dir=tmp_path,
         delay_s=0.0,
+        skip_existing=skip_existing,
+        progress=lambda completed, total: progress.append((completed, total)),
     )
 
     assert [item["filename"] for item in downloads] == ["Bg_0001.png", "Bg_0002.webp"]
-    assert (tmp_path / "Bg_0001.png").read_bytes() == b"https://img.example/Bg_0001.png"
+    expected = b"already downloaded" if skip_existing else b"https://img.example/Bg_0001.png"
+    assert existing.read_bytes() == expected
     assert (tmp_path / "Bg_0002.webp").read_bytes() == b"https://img.example/Bg_0002.webp"
+    assert info_calls == ["File:Bg_0001.png", "File:Bg_0002.webp"]
+    assert byte_calls == [item["url"] for item in downloads if not item["skipped"]]
+    assert [item["skipped"] for item in downloads] == [skip_existing, False]
+    assert progress == [(0, 2), (1, 2), (2, 2)]
+
+
+@pytest.mark.asyncio
+async def test_empty_category_reports_zero_progress(tmp_path, monkeypatch) -> None:
+    async def empty_category(*args, **kwargs):
+        return []
+
+    monkeypatch.setattr(umamusu_wiki, "list_umamusu_category_files", empty_category)
+    progress = []
+    downloads = await umamusu_wiki.download_umamusu_category_images(
+        "Category:Empty", output_dir=tmp_path,
+        progress=lambda completed, total: progress.append((completed, total)),
+    )
+    assert downloads == []
+    assert progress == [(0, 0)]
 
 
 @pytest.mark.asyncio

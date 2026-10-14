@@ -1,15 +1,17 @@
 ---
 name: umamusume-wiki-crawler
-description: 查询赛马娘 Wiki 资料、档案、台词和资源索引。通过 CLI 搜索/读取 Biligame、萌娘百科、umamusu.wiki、wikiru，使用 Umapyoi 补充结构化档案与衣装、支援卡、图片索引；支持 umamusu.wiki 分类图片下载。
+description: 查询赛马娘 Wiki 档案、台词和资源，或下载角色小人图片时使用。支持 Biligame、萌娘百科、umamusu.wiki、wikiru 正文，Umapyoi 结构化档案与资源索引，以及 Biligame 小人 PNG、umamusu.wiki 分类图片下载。
 ---
 
 # 查询流程
 
-统一入口（在项目根目录执行）：
+在项目根目录执行；首次使用先运行 `uv sync --frozen` 安装项目依赖。查询入口：
 
 ```bash
 uv run python skills/umamusume-wiki-crawler/scripts/crawl.py <tool> [args]
 ```
+
+`crawl.py` 负责参数解析、进度和 JSON 输出，查询与下载逻辑复用 `src/umamusume_web_crawler`。这个 skill 随项目使用，单独复制 skill 目录不能运行。
 
 1. 有准确 URL 或标题可直接抓取，否则先搜索。
 2. 按问题选择来源：Biligame 查机制/技能/育成；萌娘查背景/原型；umamusu.wiki 查英文整理与图库；wikiru 查日文档案、台词及触发条件。
@@ -53,6 +55,18 @@ uv run python skills/umamusume-wiki-crawler/scripts/crawl.py download_umamusu_ca
 ```
 
 支持分类翻页，跳过已有文件。JSON 输出到 stdout，进度到 stderr。
+
+# Biligame 小人 PNG
+
+使用项目主 CLI。按用户指定的角色下载；只有需要全量时才省略 `--character`：
+
+```bash
+uv run umamusume-crawler --task biligame-chibi --character "丸善斯基" --chibi-output results/biligame_chibi --request-delay 10 --page-delay 20 --no-proxy
+```
+
+`--character` 可重复，支持中文名、英文名或角色 ID。默认包含该角色的原皮和换装，`--base-only` 只取原皮。输出按角色 ID/名称和游戏衣装 ID/名称分目录；图片名使用页面实际资源 ID，不能根据游戏衣装 ID 自行拼接。默认目录是 `results/biligame_chibi`。
+
+相同命令可续跑，保留 `.chibi_manifest.json`；已完成的图片会校验后跳过。默认同主机请求间隔 5 秒、衣装页间隔 10 秒，上例使用更长间隔。遇到 `403/429/567` 会停止，查看错误后稍后续跑。
 
 # 请求与错误处理
 

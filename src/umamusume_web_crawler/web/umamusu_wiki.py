@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import re
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, Dict
 from urllib.parse import quote, urlencode
@@ -382,6 +383,7 @@ async def download_umamusu_file(
     endpoint: str = DEFAULT_API_ENDPOINT,
     timeout_s: float = 30.0,
     use_proxy: bool | None = None,
+    skip_existing: bool = False,
 ) -> dict[str, Any]:
     info = await fetch_umamusu_image_info(
         file_title_or_url, endpoint=endpoint, timeout_s=timeout_s, use_proxy=use_proxy
@@ -390,6 +392,14 @@ async def download_umamusu_file(
     directory.mkdir(parents=True, exist_ok=True)
     filename = _filename_from_file_title(str(info["title"]))
     output_path = directory / filename
+    if skip_existing and output_path.is_file():
+        return {
+            **info,
+            "filename": filename,
+            "path": str(output_path),
+            "bytes": output_path.stat().st_size,
+            "skipped": True,
+        }
     payload = await asyncio.to_thread(
         _request_bytes, str(info["url"]), timeout_s=timeout_s, use_proxy=use_proxy
     )
@@ -399,6 +409,7 @@ async def download_umamusu_file(
         "filename": filename,
         "path": str(output_path),
         "bytes": len(payload),
+        "skipped": False,
     }
 
 
@@ -412,7 +423,10 @@ async def download_umamusu_category_images(
     timeout_s: float = 30.0,
     use_proxy: bool | None = None,
     delay_s: float = 0.5,
+    skip_existing: bool = False,
+    progress: Callable[[int, int], None] | None = None,
 ) -> list[dict[str, Any]]:
+    """Download serially; progress receives (completed, total), starting at zero."""
     titles = await list_umamusu_category_files(
         category_title_or_url,
         endpoint=endpoint,
@@ -423,6 +437,8 @@ async def download_umamusu_category_images(
         delay_s=delay_s,
     )
     downloads: list[dict[str, Any]] = []
+    if progress is not None:
+        progress(0, len(titles))
     for index, title in enumerate(titles):
         downloads.append(
             await download_umamusu_file(
@@ -431,8 +447,11 @@ async def download_umamusu_category_images(
                 endpoint=endpoint,
                 timeout_s=timeout_s,
                 use_proxy=use_proxy,
+                skip_existing=skip_existing,
             )
         )
+        if progress is not None:
+            progress(index + 1, len(titles))
         if delay_s > 0 and index + 1 < len(titles):
             await asyncio.sleep(delay_s)
     return downloads

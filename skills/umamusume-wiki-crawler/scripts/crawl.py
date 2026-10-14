@@ -14,16 +14,15 @@ except Exception:  # pragma: no cover - fallback when tqdm is unavailable
     tqdm = None
 
 # Keep script runnable from repository root without installation.
-current_dir = Path(__file__).parent
+current_dir = Path(__file__).resolve().parent
 project_root = current_dir.parent.parent.parent
 src_path = project_root / "src"
 if src_path.exists():
     sys.path.insert(0, str(src_path))
 
 from umamusume_web_crawler.config import config
-from umamusume_web_crawler.web.tools import crawl_wiki, search_wiki, umapyoi_tool
-from umamusume_web_crawler.web.umamusu_wiki import (
-    download_umamusu_file, fetch_umamusu_image_info, list_umamusu_category_files,
+from umamusume_web_crawler.web.tools import (
+    crawl_wiki, search_wiki, umamusu_category_images_tool, umapyoi_tool,
 )
 
 
@@ -51,12 +50,6 @@ class _NoopProgress:
     def close(self) -> None:
         return None
 
-    def set_postfix(self, **kwargs) -> None:
-        if not kwargs:
-            return
-        summary = " ".join(f"{key}={value}" for key, value in kwargs.items())
-        print(f"[progress] {summary}", file=sys.stderr)
-
 
 def _make_progress(total: int, *, desc: str):
     if tqdm is None:
@@ -72,65 +65,32 @@ async def tool_download_umamusu_category_images(
     delay_s: float,
     use_proxy: bool | None,
 ) -> dict:
+    progress = None
+
+    def report(completed: int, total: int) -> None:
+        nonlocal progress
+        if progress is None:
+            print(
+                f"[info] Found {total} files in {category}. "
+                f"Downloading to {output_dir}", file=sys.stderr,
+            )
+            progress = _make_progress(total, desc="umamusu images")
+        if completed:
+            progress.update(1)
+
     try:
-        titles = await list_umamusu_category_files(
+        return await umamusu_category_images_tool(
             category,
+            output_dir=output_dir,
             max_files=max_files,
             delay_s=delay_s,
             use_proxy=use_proxy,
+            skip_existing=True,
+            progress=report,
         )
-        print(
-            f"[info] Found {len(titles)} files in {category}. "
-            f"Downloading to {output_dir}", file=sys.stderr
-        )
-        downloads = []
-        progress = _make_progress(len(titles), desc="umamusu images")
-        downloaded_count = 0
-        skipped_count = 0
-        try:
-            for index, title in enumerate(titles):
-                info = await fetch_umamusu_image_info(title, use_proxy=use_proxy)
-                raw_title = str(info["title"])
-                filename = raw_title.split(":", 1)[-1].replace("/", "_")
-                target_path = Path(output_dir) / filename
-                if target_path.exists():
-                    skipped_count += 1
-                    downloads.append(
-                        {
-                            **info,
-                            "filename": filename,
-                            "path": str(target_path),
-                            "bytes": target_path.stat().st_size,
-                            "skipped": True,
-                        }
-                    )
-                else:
-                    downloaded = await download_umamusu_file(
-                        title,
-                        output_dir=output_dir,
-                        use_proxy=use_proxy,
-                    )
-                    downloaded["skipped"] = False
-                    downloads.append(downloaded)
-                    downloaded_count += 1
-                progress.update(1)
-                progress.set_postfix(
-                    downloaded=downloaded_count,
-                    skipped=skipped_count,
-                )
-                if delay_s > 0 and index + 1 < len(titles):
-                    await asyncio.sleep(delay_s)
-        finally:
+    finally:
+        if progress is not None:
             progress.close()
-        return {
-            "status": "success",
-            "category": category,
-            "output_dir": output_dir,
-            "count": len(downloads),
-            "downloaded": downloads,
-        }
-    except Exception as exc:
-        return {"status": "error", "message": str(exc)}
 
 
 def _add_proxy_flags(parser: argparse.ArgumentParser) -> None:
