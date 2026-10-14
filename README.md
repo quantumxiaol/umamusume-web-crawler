@@ -42,9 +42,11 @@ Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也
 ### 写角色扮演提示词
 
 ```
-你有skills/umamusume-wiki-crawler/SKILL.md ，能够获取角色的wiki 资料。
-你需要根据用户提供的角色，在wiki查信息，写一份sillytavern 角色扮演所需要的提示词。
+使用 skills/umamusume-roleplay-prompt-writer/SKILL.md，结合 Wiki 与存在的本地剧情，
+为指定角色制作角色扮演提示词。
 ```
+
+[角色提示词生成 Skill](./skills/umamusume-roleplay-prompt-writer/SKILL.md) 依赖 Wiki 查询 Skill。默认正文输出为 `results/roleplay_prompt/Almond_Eye.md`；来源、称呼核对与开场素材保存到 `results/roleplay_prompt/_notes/Almond_Eye.md`。正文可由现有角色构建器整份读取，附属文件供查证及开场装配；不自动迁移旧目录。
 
 [爱如往昔的提示词](./result/Still_in_Love.md)
 

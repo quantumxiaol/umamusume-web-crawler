@@ -365,8 +365,9 @@ python mcpserver.py --http -p 7777
 当前 skill：
 
 - [skills/umamusume-wiki-crawler/SKILL.md](../skills/umamusume-wiki-crawler/SKILL.md)
+- [skills/umamusume-roleplay-prompt-writer/SKILL.md](../skills/umamusume-roleplay-prompt-writer/SKILL.md)：依赖 Wiki 查询，结合本地剧情生成角色提示词；正文平铺保存到 `results/roleplay_prompt/<English_Name>.md`，来源与开场素材保存到 `_notes/<English_Name>.md`。
 
-统一入口：
+Wiki 查询统一入口：
 
 ```bash
 uv run python skills/umamusume-wiki-crawler/scripts/crawl.py <tool> [args]
