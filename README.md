@@ -1,179 +1,180 @@
 # Umamusume Web Crawler
 
-围绕赛马娘 Wiki 的正文提取、结构化档案和资源索引工具集：
+查询赛马娘角色资料、导出 Wiki 正文，并下载角色图片与音频。支持命令行、MCP 和 Skill，可用于资料整理、同人小说创作和角色扮演提示词制作。
 
-- `wiki.biligame.com/umamusume`
-- `mzh.moegirl.org.cn`
-- `umamusu.wiki`
-- `umamusume.wikiru.jp`（PukiWiki 公开正文）
-- `umapyoi.net`（JSON 档案与资源索引）
+## 支持的资料来源
 
-Google 函数代码保留；MCP server 不导入、不注册 Google 工具，也没有启用开关；skill 不调用 Google。视觉抓取方案继续保留。
+| 来源 | 适合查询的内容 |
+| --- | --- |
+| [Biligame 赛马娘 Wiki](https://wiki.biligame.com/umamusume/) | 游戏档案、技能、育成事件、台词与角色资源 |
+| [萌娘百科](https://mzh.moegirl.org.cn/) | 角色背景、作品设定与原型资料 |
+| [umamusu.wiki](https://umamusu.wiki/) | 英文角色资料、整理页与分类图库 |
+| [wikiru](https://umamusume.wikiru.jp/) | 日文档案、台词及触发条件；角色搜索使用日文名 |
+| [Umapyoi](https://umapyoi.net/) | 结构化角色档案、衣装、支援卡和图片资源索引 |
 
-我之前试过crawl4ai ，把网站pdf 化，用markitdown、qwen2.5VL转markdown，做完发现效果还是不好，又看到他们开放了 MediaWiki API接口，发现前面的东西白做了。
+Wiki 正文导出为 Markdown，保留表格、折叠台词和链接；Umapyoi 提供 JSON 数据。正文中的关联页面保留为链接，需要时可单独获取。
 
-## 当前定位
+代码中也提供 Google 搜索工具，但默认不启用。日常角色查询与创作所需的资料通常可以从上述来源获取，无需配置 Google。
 
-当前代码的主线能力是：
+## 安装
 
-- 四站 wiki 搜索与完整正文 Markdown（wikiru 搜索限角色索引，使用日文名）
-- 保留档案表、技能表、折叠台词及来源链接
-- Umapyoi 结构化档案、衣装/支援卡/图片索引
-- 部分资源下载
-  - Biligame：角色音频/图片批量下载
-  - Biligame 小人 PNG：原皮与换装分组下载，支持校验、断点续跑
-  - umamusu.wiki：分类图片批量下载
-- Google 搜索函数保留，可由 Python 手动调用
+需要 Python 3.12 或更高版本，以及 `uv`。下载或克隆本仓库后，在项目根目录执行：
 
-## 使用
+```bash
+uv sync --frozen
+uv run umamusume-crawler --help
+```
 
-这个项目最早是为了我自己产出赛马娘同人小说/角色扮演提示词的agent工作流设计的，随着agent与skill的发展，那个项目已经没用了，普通人不可能开发一个强过codex、claude code的agent。
+完成安装即可查询 Wiki、读取 Umapyoi 数据或下载小人图片。下文的命令均在项目根目录运行，输出默认保存在 `results/` 下。
+
+## 配合 AI 助手使用
+
+用能够读取本地文件、执行命令的 AI 助手打开本项目，然后发送下面的任务描述。Skill 随完整项目使用，查询脚本依赖仓库中的 Python 代码。
+
+### 查询角色资料
+
+[Wiki 查询 Skill](./skills/umamusume-wiki-crawler/SKILL.md) 负责搜索与获取资料。例如：
+
+```text
+使用 skills/umamusume-wiki-crawler/SKILL.md，查询东海帝王的角色档案、
+说话习惯和对训练员的称呼，整理结果并附来源链接。
+```
 
 ### 写小说
 
-```
-你有skills/umamusume-wiki-crawler/SKILL.md ，能够获取角色的wiki 资料。
-你需要根据用户构思的小说剧情，结合wiki查到的信息，写一篇完整的小说。
+可以让助手用 Wiki 查询 Skill 收集资料，再按自己的构思写作：
+
+```text
+使用 skills/umamusume-wiki-crawler/SKILL.md 查询星云天空的资料，
+结合她的性格与说话习惯，写一篇训练员陪她钓鱼的同人短篇。
+剧情重点是两人从互相试探到坦白心意，约 3000 字。
 ```
 
-[生成小说实例1](./result/Tachyon.md)，爱丽速子，Antigravity + Gemini 3.1 Pro 生成。
-[生成小说实例2](./result/钓上来的那颗心.md)，星云天空，Codex + GPT 5.6 sol 生成。
+此前用这种方式生成的作品：
+
+- [爱丽速子：不可测量的化学反应](./result/Tachyon.md) — Antigravity + Gemini 3.1 Pro。
+- [星云天空：钓上来的那颗心](./result/钓上来的那颗心.md) — Codex + GPT 5.6 sol。
+
+现在也提供专用的 [同人小说 Skill](./skills/umamusume-fanfic-writer/SKILL.md)，把资料核对、创作和成稿检查放在同一流程中。直接给出角色与剧情即可：
+
+```text
+使用 skills/umamusume-fanfic-writer/SKILL.md，写一篇星云天空的同人短篇。
+剧情是训练员陪她钓鱼，两人从互相试探到坦白心意，约 3000 字。
+```
+
+小说默认保存到 `results/novel/`，文末附资料来源和原创情节说明；也可以在请求中指定输出路径。
 
 ### 写角色扮演提示词
 
+同样可以先用 Wiki 查询 Skill 收集资料，再让助手整理成提示词：
+
+```text
+使用 skills/umamusume-wiki-crawler/SKILL.md 查询爱如往昔的资料，
+为她制作中文角色扮演提示词，包含性格、说话习惯、重要关系和台词示例。
+用户扮演训练员。
 ```
-使用 skills/umamusume-roleplay-prompt-writer/SKILL.md，结合 Wiki 与存在的本地剧情，
-为指定角色制作角色扮演提示词。
+
+此前生成的示例：[爱如往昔的角色扮演提示词](./result/Still_in_Love.md)。更多示例见 [umamusume-agent 的角色目录](https://github.com/quantumxiaol/umamusume-agent/tree/main/characters)。
+
+也可以直接使用专用的 [角色提示词 Skill](./skills/umamusume-roleplay-prompt-writer/SKILL.md)，由它调用 Wiki 查询并组织角色设定：
+
+```text
+使用 skills/umamusume-roleplay-prompt-writer/SKILL.md，为杏目制作中文
+角色扮演提示词。用户扮演已经与她相识的训练员，侧重日常相处和训练中的互动。
 ```
 
-[角色提示词生成 Skill](./skills/umamusume-roleplay-prompt-writer/SKILL.md) 依赖 Wiki 查询 Skill。默认正文输出为 `results/roleplay_prompt/Almond_Eye.md`；来源、称呼核对与开场素材保存到 `results/roleplay_prompt/_notes/Almond_Eye.md`。正文可由现有角色构建器整份读取，附属文件供查证及开场装配；不自动迁移旧目录。
+提示词保存在 `results/roleplay_prompt/`，按角色英文名命名，例如杏目对应 `Almond_Eye.md`。正文用于提供给模型的角色设定；资料来源、称呼核对和开场素材另存于该目录下的 `_notes/`，方便查阅和调整。
 
-[爱如往昔的提示词](./result/Still_in_Love.md)
+两个专用写作 Skill 都会查询 Wiki。如果已有本地剧情资料，可放在 `results/character_story/` 中供它们参考；没有本地剧情时，则使用能获取的 Wiki 资料。
 
-更多写好的[提示词](https://github.com/quantumxiaol/umamusume-agent/tree/main/characters)
+## 命令行使用
 
-## 能力矩阵
-
-| 能力 | Python API | 主 CLI `umamusume-crawler` | MCP `umamusume-mcp` | Skill `skills/umamusume-wiki-crawler` |
-| :--- | :--- | :--- | :--- | :--- |
-| Google 搜索 | 保留 | 无独立入口 | 不加载 | 无 |
-| Biligame 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
-| Moegirl 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
-| umamusu.wiki 标题搜索 | 有 | 无独立搜索子命令 | 有 | 有 |
-| Biligame 页面抓取 | 有 | 有 | 有 | 有 |
-| Moegirl 页面抓取 | 有 | 有 | 有 | 有 |
-| umamusu.wiki 页面抓取 | 有 | 有 | 有 | 有 |
-| wikiru 角色搜索/正文 | 有 | 正文 | 有 | 有 |
-| Umapyoi 搜索/档案/资源索引 | 有 | 有 | 有 | 有 |
-| 角色/衣装索引更新 | 有 | 有 | 无 | 无 |
-| Biligame 角色音频/图片下载 | 有 | 有 | 无 | 无 |
-| Biligame 小人 PNG 批量下载 | 有 | 有 | 无 | 通过主 CLI |
-| umamusu.wiki 分类图片下载 | 有 | 无 | 有 | 有 |
-| 视觉抓取 | 有 | 有 | 无 | 无 |
-
-补充说明：
-
-- 主 CLI 支持 `page`、`update-character-index`、`biligame-assets`、`biligame-chibi`，以及 `umapyoi-search`、`umapyoi-character`、`umapyoi-resources`。
-- MCP 和 skill 共用正文与工具逻辑，提供四站搜索/抓取、Umapyoi 补充资料及分类图片下载。
-- Bwiki/umamusu 正文使用 MediaWiki `action=parse`；萌娘使用公开 HTML，避免 `extracts` 丢失表格；wikiru 使用公开 PukiWiki HTML。
-- 正文不递归抓关联页，保留链接。旧 `max_depth` / `max_pages` 在 MCP/skill 中仅兼容接收，不再影响渲染正文。
-
-## 安装与环境
+### 导出 Wiki 正文
 
 ```bash
-uv lock
-uv sync
-source .venv/bin/activate
-playwright install
+# Biligame 中文正文
+uv run umamusume-crawler \
+  --url "https://wiki.biligame.com/umamusume/东海帝皇" \
+  --output results/teio.md
+
+# wikiru 日文正文
+uv run umamusume-crawler --mode wikiru \
+  --url "トウカイテイオー" --output results/teio-ja.md
 ```
 
-环境变量：
+也支持萌娘百科和 umamusu.wiki 的页面 URL。省略 `--output` 时写入 `results/crawl.md`，使用 `--output -` 可直接输出到终端。
 
-- `GOOGLE_API_KEY`
-- `GOOGLE_CSE_ID`
-- `HTTP_PROXY` / `HTTPS_PROXY`
-- `USER_AGENT`（默认可识别的 `UmamusumeWebCrawler/1.0`）
-- `CRAWLER_TIMEOUT_S`
-- `CRAWLER_USER_DATA_DIR`
-- `CRAWLER_CACHE_DIR`（默认 `results/.http-cache`）
+### 查询 Umapyoi 档案与资源
 
-说明：
-
-- `GOOGLE_API_KEY` / `GOOGLE_CSE_ID` 只在 Google 搜索相关能力中需要。
-- Wiki 与 Umapyoi 均不依赖 Google。默认请求使用项目 UA；同进程同主机串行，间隔至少 2 秒。正文缓存 1 小时，Umapyoi/日文角色索引缓存 24 小时；删除缓存文件可强制刷新。
-- `403/429/567` 明确报错并冷却，不自动切换到摘要或 Google。
-- `main.py` 与 `mcpserver.py` 会自动尝试加载当前目录 `.env`。
-- 作为 Python 库调用时，不会自动读取 `.env`，请自行 `load_dotenv()` 或直接传环境变量。
-
-## 快速使用
+先搜索角色，再用结果中的 `game_id` 获取资料。以下示例中的 `1003` 是东海帝王的游戏 ID：
 
 ```bash
-umamusume-crawler --url "https://wiki.biligame.com/umamusume/东海帝皇" --output results/teio.md
-umamusume-crawler --mode wikiru --url "トウカイテイオー" --output results/teio-ja.md
-umamusume-crawler --task umapyoi-search --keyword "Tokai Teio" --output -
-umamusume-crawler --task umapyoi-character --game-id 1003 --output results/teio-profile.json
-umamusume-crawler --task umapyoi-resources --game-id 1003 --output results/teio-resources.json
-umamusume-mcp --http -p 7777
+uv run umamusume-crawler --task umapyoi-search --keyword "Tokai Teio" --output -
+uv run umamusume-crawler --task umapyoi-character --game-id 1003 --output results/teio-profile.json
+uv run umamusume-crawler --task umapyoi-resources --game-id 1003 --output results/teio-resources.json
 ```
 
-Umapyoi 使用 `game_id`，不是其数据库 `id`。缺失字段保持为空，资料带来源，不自动覆盖 Wiki 档案。资源链接标为未验证，不自动下载；支援卡索引可能包含其他主角色 ID 的团体卡。
+资源查询返回衣装、支援卡与图片链接，不会下载文件。链接可能失效，缺失字段会按原样保留。
 
-使用说明见[结构与使用](./docs/structure.md)，问题排查和实现取舍记在[开发日志](./docs/devlog.md)。
+### 对比五个来源
 
-## 对比五个来源
-
-导出同一角色的五份 Markdown，方便逐份检查正文和字段：
+想直接查看各站的获取效果，可以一次导出东海帝王的五份样例：
 
 ```bash
 uv run python scripts/export_source_samples.py --no-proxy
 ```
 
-默认写入 `results/test_raw_crawler/`，文件名为 `biligame.md`、`moegirl.md`、`umamusu.md`、`wikiru.md`、`umapyoi.md`。前四份是东海帝王的正文，Umapyoi 保留 JSON 档案和资源索引。脚本会复用有效缓存；只重跑一站时加 `--site biligame` 等参数。
+结果写入 `results/test_raw_crawler/`：`biligame.md`、`moegirl.md`、`umamusu.md`、`wikiru.md`、`umapyoi.md`。前四份是 Wiki 正文，最后一份包含 Umapyoi 的 JSON 档案与资源索引。只查看一站时，添加 `--site biligame` 等参数。
 
 ## Biligame 小人图片
 
-只下载页面左下角互动小人的原始 PNG，通过 MediaWiki API 解析实际文件引用；不需要启动浏览器。默认读取 `umamusume_characters.json`，包含其中所有已实装角色的原皮和换装。
-
-在项目根目录执行：
+下载角色页面左下角互动小人的透明 PNG，默认包含原皮和换装：
 
 ```bash
-# 全量下载到 results/biligame_chibi；再次执行会校验并跳过已完成的衣装
-uv run umamusume-crawler --task biligame-chibi --no-proxy
+# 单个角色，默认保存到 results/biligame_chibi
+uv run umamusume-crawler --task biligame-chibi --character 丸善斯基 --no-proxy
 
-# 只下载指定角色，可重复 --character，支持中文名、英文名或角色 ID
-uv run umamusume-crawler --task biligame-chibi --character 丸善斯基 --character 1003 --no-proxy
+# 只下载原皮，并指定保存目录
+uv run umamusume-crawler --task biligame-chibi \
+  --character 丸善斯基 --base-only --chibi-output ./my_chibi --no-proxy
 
-# 自定义目录；只要原皮时加 --base-only
-uv run umamusume-crawler --task biligame-chibi --character Maruzensky --chibi-output ./my_chibi --base-only --no-proxy
-
-# 重新检查站点的图片版本；图片未变化时复用本地文件
-uv run umamusume-crawler --task biligame-chibi --character 丸善斯基 --refresh-existing --no-proxy
-
-# 进一步放慢：同主机请求间隔 10 秒，衣装页之间等待 20 秒
-uv run umamusume-crawler --task biligame-chibi --request-delay 10 --page-delay 20 --no-proxy
+# 下载本地索引中的全部已实装角色，并放慢请求间隔
+uv run umamusume-crawler --task biligame-chibi \
+  --request-delay 10 --page-delay 20 --no-proxy
 ```
 
-默认目录示例（每套衣装通常有 `0010`、`0011` 两张）：
+`--character` 支持中文名、英文名或角色 ID，可以重复指定多个角色。图片按角色与衣装分目录保存，原皮目录标为 `原皮`，换装目录保留衣装名。每套衣装通常有两张互动状态图。
 
-```text
-results/biligame_chibi/
-├── .chibi_manifest.json
-└── 1004_丸善斯基/
-    ├── 100401_原皮/
-    │   ├── Petit_chr_1004_100401_0010.png
-    │   └── Petit_chr_1004_100401_0011.png
-    ├── 100402_【ぶっとび☆さまーナイト】/
-    │   ├── Petit_chr_1004_100430_0010.png
-    │   └── Petit_chr_1004_100430_0011.png
-    └── 100403_【祝ひ寿ぐ神速天女】/
-        ├── Petit_chr_1004_100410_0010.png
-        └── Petit_chr_1004_100410_0011.png
+再次运行同一命令会校验并跳过已完成内容，补齐缺失或损坏的图片。请保留输出目录中的 `.chibi_manifest.json`，其中保存下载进度和角色、衣装、图片的对应关系。
+
+需要新增角色或衣装时，先更新本地索引：
+
+```bash
+uv run umamusume-crawler --task update-character-index --no-proxy
 ```
 
-衣装目录使用**游戏衣装 ID**，文件名保留**图片资源衣装 ID**。两者可能不同，例如 `100402 → 100430`；下载器读取页面引用，不按衣装编号猜图片地址。`0010`、`0011` 是互动状态编号，不表示正面/背面。角色名、原皮标记、来源页面、两种 ID、文件哈希及错误记录保存在 `.chibi_manifest.json`，请和图片一起保留。
+更多参数、目录示例和错误处理见 [小人下载说明](./docs/structure.md#biligame-互动小人-png)。角色立绘和音频下载见 [角色资源下载](./docs/structure.md#3-biligame-角色资源下载)。
 
-流程按主机串行请求，同主机请求之间默认等待 5 秒（最低 2 秒），衣装页之间默认等待 10 秒；可通过 `--request-delay`、`--page-delay` 调整。请求间隔同时用于页面 API、文件信息 API 和图片 CDN 的实际请求，命中缓存不访问站点。临时网络错误最多重试一次。写入前检查 PNG 格式、尺寸和完整性，成功后原子替换文件。再次运行时补齐缺失/损坏图片；遇到 `403/429/567` 或要求稍后重试的响应立即停止，稍后重跑同一命令即可续传。有缺图或失败时退出码为 `1`，原因写入下载记录，不将缺图衣装算作完成。`567` 若伴随 `Server: TencentEdgeOne`，表示 EdgeOne 规则拦截，可能涉及自定义规则、限频或 Bot 管理；仅凭状态码不能确定是否封 IP，也不能保证增加等待时间就能解决。
+## 接入 MCP
 
-Bwiki API 请求带可识别的项目 UA、`Accept: application/json` 和同 Wiki 的 `Referer`，不需要手工填登录 Cookie。遇到 HTTP 错误，下载记录会保留处理阶段（`page_html` / `image_info` / `image_download:状态编号`）、状态码和安全的诊断响应头（包括 `Server`、`EO-LOG-UUID`），不记录 Cookie。首条请求立即发出，delay 控制实际请求之间的间隔；浏览器页面可用也不等于脚本 API 一定可用。
+启动本地服务：
 
-批量范围以本地角色索引为准；需要新增角色/衣装时，先执行 `uv run umamusume-crawler --task update-character-index --no-proxy`。
+```bash
+uv run umamusume-mcp --http -p 7777
+```
+
+在支持 Streamable HTTP 的 MCP 客户端中添加 `http://127.0.0.1:7777/mcp/`。服务提供四站 Wiki 搜索与正文、Umapyoi 档案与资源索引，以及 umamusu.wiki 分类图片下载。
+
+使用 stdio 客户端时，将工作目录设为项目根目录，启动命令为 `uv run umamusume-mcp`。工具参数见 [MCP 说明](./docs/structure.md#mcp)。
+
+## 请求与常见问题
+
+- **代理**：命令行加 `--no-proxy` 可直接连接；需要代理时配置 `HTTP_PROXY` / `HTTPS_PROXY` 并使用 `--use-proxy`。
+- **重复查询**：默认复用有效缓存，存放在 `results/.http-cache/`，可通过 `CRAWLER_CACHE_DIR` 更改目录。
+- **访问受限**：遇到 `403/429/567` 时先查看错误信息，稍后再试。站点可能针对脚本请求或不同网络环境设置访问限制，浏览器能打开页面不代表脚本一定可用。
+- **批量下载**：按设置的间隔逐步请求。不要同时启动多个下载任务；中断后重跑原命令即可续传小人图片。
+
+## 更多文档
+
+- [项目说明](./docs/structure.md)：完整参数、Python API、MCP 工具、环境配置与测试方式。
+- [开发日志](./docs/devlog.md)：抓取方案的演变、正文完整性改进与访问问题排查。
