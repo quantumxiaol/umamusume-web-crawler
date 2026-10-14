@@ -42,7 +42,7 @@ jobs:
             tests/test_umamusu_wiki.py
 
   source-availability:
-    name: Availability / ${{ matrix.name }}
+    name: Availability (advisory) / ${{ matrix.name }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -98,20 +98,24 @@ jobs:
 
       - name: Check source search, content and data
         id: source
+        continue-on-error: true
         env:
           TEST_NODES: ${{ matrix.source_tests }}
         run: |
           read -r -a test_nodes <<< "$TEST_NODES"
-          .venv/bin/pytest -v -ra --junitxml=reports/source.xml "${test_nodes[@]}"
+          .venv/bin/pytest -v -ra --maxfail=1 --junitxml=reports/source.xml "${test_nodes[@]}"
 
-      # A source failure remains red. Avoid immediately probing it again via MCP.
+      # Use the real outcome: continue-on-error makes the conclusion successful.
+      # Do not send another request to a source that just failed or challenged us.
       - name: Start MCP HTTP server
         id: server
+        if: steps.source.outcome == 'success'
         run: |
           nohup .venv/bin/python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
 
       - name: Wait for MCP HTTP server
         id: ready
+        if: steps.server.outcome == 'success'
         run: |
           for attempt in {1..30}; do
             if .venv/bin/python -c 'import socket; socket.create_connection(("127.0.0.1", 7777), timeout=1).close()'; then
@@ -124,11 +128,13 @@ jobs:
 
       - name: Check source through MCP tools
         id: mcp
+        if: steps.source.outcome == 'success' && steps.ready.outcome == 'success'
+        continue-on-error: true
         env:
           TEST_NODES: ${{ matrix.mcp_tests }}
         run: |
           read -r -a test_nodes <<< "$TEST_NODES"
-          .venv/bin/pytest -v -ra --junitxml=reports/mcp.xml "${test_nodes[@]}"
+          .venv/bin/pytest -v -ra --maxfail=1 --junitxml=reports/mcp.xml "${test_nodes[@]}"
 
       - name: Summarize source availability
         if: always()
@@ -140,8 +146,12 @@ jobs:
           SERVER_RESULT: ${{ steps.ready.outcome }}
           MCP_RESULT: ${{ steps.mcp.outcome }}
         run: |
+          if [[ "$SOURCE_RESULT" == "failure" || "$MCP_RESULT" == "failure" ]]; then
+            printf '::warning title=Source availability / %s::Source=%s; MCP=%s. Live probe failed; see source-check-%s. Offline tests remain required.\n' \
+              "$SITE_NAME" "$SOURCE_RESULT" "$MCP_RESULT" "$SITE_ID"
+          fi
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-          ### $SITE_NAME
+          ### $SITE_NAME — 联网探测（仅告警）
 
           | 检查阶段 | 结果 |
           | --- | --- |
@@ -151,8 +161,9 @@ jobs:
           | MCP 工具调用 | $MCP_RESULT |
 
           失败详情见对应步骤日志及 source-check-$SITE_ID 测试报告。
-          HTTP 拒绝访问、接口错误和内容断言失败都会使本站点检查失败；skipped 表示未验证。
-          来源检查失败时不继续发起 MCP 请求，其他站点仍独立检查。
+          failure 保留探测的真实失败结果，但联网测试失败不阻断 CI；skipped 表示未验证。
+          每站遇到首个失败即停止，来源失败时不继续发起 MCP 请求；其他站点仍独立探测。
+          离线解析和功能回归仍须通过；依赖安装或本地 MCP 服务启动错误仍会使任务失败。
           EOF
 
       - name: Upload source test reports and MCP log

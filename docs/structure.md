@@ -456,20 +456,24 @@ umamusume-crawler \
 
 ## 测试
 
-CI 使用显式测试列表，包含离线回归和五个独立的站点可用性检查：
+CI 使用显式测试列表。离线解析和功能回归必须通过，五个站点的真实访问探测只报告告警：
 
 | CI job | 验证范围 | 是否联网 |
 | --- | --- | --- |
 | `Unit tests (offline)` | 解析、索引、配置、资源处理等确定性单元测试 | 否 |
-| `Availability / Biligame` | 标题搜索、正文及 MCP 正文工具 | 是 |
-| `Availability / Moegirl (萌娘百科)` | 标题搜索、公开 HTML 正文及 MCP 正文工具 | 是 |
-| `Availability / umamusu.wiki` | 标题搜索、正文及 MCP 正文工具 | 是 |
-| `Availability / wikiru` | 日文角色搜索、正文及 MCP 正文工具 | 是 |
-| `Availability / Umapyoi` | 搜索、档案、资源索引及对应的三个 MCP 工具 | 是 |
+| `Availability (advisory) / Biligame` | 标题搜索、正文及 MCP 正文工具 | 是 |
+| `Availability (advisory) / Moegirl (萌娘百科)` | 标题搜索、公开 HTML 正文及 MCP 正文工具 | 是 |
+| `Availability (advisory) / umamusu.wiki` | 标题搜索、正文及 MCP 正文工具 | 是 |
+| `Availability (advisory) / wikiru` | 日文角色搜索、正文及 MCP 正文工具 | 是 |
+| `Availability (advisory) / Umapyoi` | 搜索、档案、资源索引及对应的三个 MCP 工具 | 是 |
 
-每个站点先检查 Python 客户端，成功后启动 MCP 服务并检查工具调用。失败仍会标红：`403/429/567` 表示本次访问受限；接口错误、缺少字段、正文或台词断言失败也会报告，不自动跳过或算作成功。检查范围是现有代表页面和接口，不能证明全站内容都正常。
+离线测试用固定 HTML/JSON 样本和 mock 验证正文、折叠台词、表格对应关系、字段提取、MCP 工具结果及 HTTP 错误处理。解析失败仍会使 CI 失败，不依赖外站可用性，也不需要先访问站点录制响应。
 
-矩阵设置 `fail-fast: false`，一个站点失败不会取消其他站点；最多同时检查两个站点。来源检查失败时，本站点的 MCP 阶段不再请求来源，报告为 `skipped`（未验证）。Actions 摘要分别列出来源调用、MCP 服务和 MCP 工具的结果；每站的 `source-check-<site>` 附件保存 JUnit 测试报告与已产生的 MCP 日志，便于查看具体失败用例、HTTP 错误或数据断言。
+联网探测先检查 Python 客户端，成功后启动 MCP 服务并检查工具调用。两个联网 pytest 步骤设置 `continue-on-error: true`：HTTP 拒绝访问、超时、接口错误、缺少字段或正文断言失败都会保留在报告中，并产生 Actions warning，但不使 CI 失败。测试断言没有放宽，JUnit 中仍记录真实失败；本地直接运行这些联网测试时仍返回非零退出码。依赖安装、本地 MCP 服务启动等步骤仍按正常错误处理。
+
+每个联网 pytest 步骤使用 `--maxfail=1`，遇到首个失败便停止；不清空同主机的冷却和限速状态来继续请求。MCP 步骤依据来源步骤的实际 `outcome` 判断，来源失败时报告 `skipped`（未验证），不会因为忽略错误后的 `conclusion: success` 又发起请求。离线传输测试通过 fixture 隔离状态，和真实探测的冷却策略分开处理。
+
+矩阵设置 `fail-fast: false`，一个站点失败不会取消其他站点；最多同时探测两个站点。Actions 摘要分别列出来源调用、MCP 服务和 MCP 工具的实际结果；每站的 `source-check-<site>` 附件保存 JUnit 测试报告与已产生的 MCP 日志。可用性任务显示绿色只表示没有阻断 CI，站点是否可用要看摘要和告警。探测范围是现有代表页面和接口，不能证明全站内容都正常。
 
 HTTP 错误会记录响应中的 `CF-Ray`、`cf-mitigated` 和错误页标题（若有），与状态码一起出现在步骤日志、JUnit 报告和工具返回的错误信息中。标题只从 HTML 错误响应的前 8 KiB 提取，压成单行并截到 200 字符；不保存完整错误页、Cookie 或验证脚本。标题读取失败时仍保留原始 HTTP 错误，不为诊断重新请求。小人下载的错误记录也保留这些诊断信息。
 
