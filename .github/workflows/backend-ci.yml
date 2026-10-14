@@ -5,6 +5,7 @@ on:
     branches: [main]
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -40,9 +41,47 @@ jobs:
             tests/test_skill_cli.py \
             tests/test_umamusu_wiki.py
 
-  crawler-api:
-    name: Source clients (4 Wiki + Umapyoi)
+  source-availability:
+    name: Availability / ${{ matrix.name }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include:
+          - site: biligame
+            name: Biligame
+            source_tests: >-
+              tests/test_biligame_crawler.py
+              tests/test_search_title.py::test_search_biligame_title
+            mcp_tests: tests/test_mcp_wiki_tools.py::test_mcp_wiki_crawler_tool[biligame]
+          - site: moegirl
+            name: Moegirl (萌娘百科)
+            source_tests: >-
+              tests/test_moegirl_crawler.py
+              tests/test_search_title.py::test_search_moegirl_title
+            mcp_tests: tests/test_mcp_wiki_tools.py::test_mcp_wiki_crawler_tool[moegirl]
+          - site: umamusu
+            name: umamusu.wiki
+            source_tests: >-
+              tests/test_umamusu_wiki_crawler.py
+              tests/test_search_title.py::test_search_umamusu_title
+            mcp_tests: tests/test_mcp_wiki_tools.py::test_mcp_wiki_crawler_tool[umamusu]
+          - site: wikiru
+            name: wikiru
+            source_tests: tests/test_supplemental_sources.py::test_wikiru_character_search_and_complete_body
+            mcp_tests: tests/test_mcp_wiki_tools.py::test_mcp_wiki_crawler_tool[wikiru]
+          - site: umapyoi
+            name: Umapyoi
+            source_tests: tests/test_supplemental_sources.py::test_umapyoi_search_profile_and_resources
+            mcp_tests: tests/test_mcp_wiki_tools.py::test_mcp_umapyoi_tools
+    env:
+      RUN_SOURCE_INTEGRATION: "1"
+      RUN_MCP_INTEGRATION: "1"
+      MCP_URL: http://127.0.0.1:7777/mcp/
+      # Direct clients and the MCP process share fresh responses within this job.
+      CRAWLER_CACHE_DIR: ${{ github.workspace }}/results/.http-cache
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -54,44 +93,25 @@ jobs:
         run: uv venv --python 3.12
 
       - name: Install dependencies
+        id: dependencies
         run: uv sync --frozen
 
-      - name: Crawl pages directly through Python APIs
-        run: |
-          .venv/bin/pytest -q \
-            tests/test_biligame_crawler.py \
-            tests/test_moegirl_crawler.py \
-            tests/test_umamusu_wiki_crawler.py
-
-      - name: Search titles directly through Python APIs
-        run: .venv/bin/pytest -q tests/test_search_title.py
-
-      - name: Query wikiru and Umapyoi public sources
+      - name: Check source search, content and data
+        id: source
         env:
-          RUN_SOURCE_INTEGRATION: "1"
-        run: .venv/bin/pytest -q tests/test_supplemental_sources.py
+          TEST_NODES: ${{ matrix.source_tests }}
+        run: |
+          read -r -a test_nodes <<< "$TEST_NODES"
+          .venv/bin/pytest -v -ra --junitxml=reports/source.xml "${test_nodes[@]}"
 
-  mcp-tools:
-    name: MCP Tool calls (4 Wiki + Umapyoi)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v2
-
-      - name: Create Python 3.12 environment
-        run: uv venv --python 3.12
-
-      - name: Install dependencies
-        run: uv sync --frozen
-
+      # A source failure remains red. Avoid immediately probing it again via MCP.
       - name: Start MCP HTTP server
+        id: server
         run: |
           nohup .venv/bin/python mcpserver.py --http -p 7777 > mcpserver.log 2>&1 &
 
       - name: Wait for MCP HTTP server
+        id: ready
         run: |
           for attempt in {1..30}; do
             if .venv/bin/python -c 'import socket; socket.create_connection(("127.0.0.1", 7777), timeout=1).close()'; then
@@ -102,15 +122,46 @@ jobs:
           cat mcpserver.log
           exit 1
 
-      - name: Invoke all four Wiki and Umapyoi MCP tools
+      - name: Check source through MCP tools
+        id: mcp
         env:
-          RUN_MCP_INTEGRATION: "1"
-          MCP_URL: http://127.0.0.1:7777/mcp/
-        run: .venv/bin/pytest -q tests/test_mcp_wiki_tools.py
+          TEST_NODES: ${{ matrix.mcp_tests }}
+        run: |
+          read -r -a test_nodes <<< "$TEST_NODES"
+          .venv/bin/pytest -v -ra --junitxml=reports/mcp.xml "${test_nodes[@]}"
 
-      - name: Upload MCP server log on failure
-        if: failure()
+      - name: Summarize source availability
+        if: always()
+        env:
+          SITE_NAME: ${{ matrix.name }}
+          SITE_ID: ${{ matrix.site }}
+          DEPENDENCIES_RESULT: ${{ steps.dependencies.outcome }}
+          SOURCE_RESULT: ${{ steps.source.outcome }}
+          SERVER_RESULT: ${{ steps.ready.outcome }}
+          MCP_RESULT: ${{ steps.mcp.outcome }}
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ### $SITE_NAME
+
+          | 检查阶段 | 结果 |
+          | --- | --- |
+          | 依赖安装 | $DEPENDENCIES_RESULT |
+          | 来源搜索、正文或结构化数据 | $SOURCE_RESULT |
+          | MCP 服务就绪 | $SERVER_RESULT |
+          | MCP 工具调用 | $MCP_RESULT |
+
+          失败详情见对应步骤日志及 source-check-$SITE_ID 测试报告。
+          HTTP 拒绝访问、接口错误和内容断言失败都会使本站点检查失败；skipped 表示未验证。
+          来源检查失败时不继续发起 MCP 请求，其他站点仍独立检查。
+          EOF
+
+      - name: Upload source test reports and MCP log
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mcpserver-log
-          path: mcpserver.log
+          name: source-check-${{ matrix.site }}
+          path: |
+            reports/*.xml
+            mcpserver.log
+          if-no-files-found: ignore
+          retention-days: 14
